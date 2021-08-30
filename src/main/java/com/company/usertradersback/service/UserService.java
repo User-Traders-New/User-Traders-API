@@ -3,7 +3,9 @@ package com.company.usertradersback.service;
 import com.company.usertradersback.config.jwt.JwtTokenProvider;
 import com.company.usertradersback.dto.UserDto;
 import com.company.usertradersback.entity.UserEntity;
+import com.company.usertradersback.entity.UserIsLoginedEntity;
 import com.company.usertradersback.exception.user.ApiIllegalArgumentException;
+import com.company.usertradersback.repository.UserIsLoginedRepository;
 import com.company.usertradersback.repository.UserRepository;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -13,6 +15,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
+import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 
@@ -23,11 +27,15 @@ public class UserService implements UserDetailsService {
     // 따라서 생성자 주입 해줄 때 @LAZY로 지연 로딩 시켜준다. 허나 이건 임시 방편이다.
 
     private final UserRepository userRepository;
+    private final UserIsLoginedRepository userIsLoginedRepository;
     private final JwtTokenProvider jwtTokenProvider;
     private final PasswordEncoder passwordEncoder;
 
-    public UserService(@Lazy UserRepository userRepository, @Lazy JwtTokenProvider jwtTokenProvider, @Lazy PasswordEncoder passwordEncoder) {
+    public UserService(@Lazy UserRepository userRepository,
+                       @Lazy UserIsLoginedRepository userIsLoginedRepository,
+                       @Lazy JwtTokenProvider jwtTokenProvider, @Lazy PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.userIsLoginedRepository = userIsLoginedRepository;
         this.jwtTokenProvider = jwtTokenProvider;
         this.passwordEncoder = passwordEncoder;
     }
@@ -53,7 +61,28 @@ public class UserService implements UserDetailsService {
         if (!passwordEncoder.matches(user.get("password"), userEntity.getPassword())) {
             throw new ApiIllegalArgumentException("잘못된 비밀번호입니다.");
         }
+        int a = userIsLoginedRepository.checkId(userEntity.getId());
+
+        if(a>=1){
+            LocalDateTime logoutAt = userIsLoginedRepository.findByLogoutAt(userEntity.getId());
+            userIsLoginedRepository.updateLoginAt(logoutAt,LocalDateTime.now(),userEntity.getId());
+        }else{
+            userIsLoginedRepository.save(
+                    UserIsLoginedEntity.builder()
+                            .id(userEntity.getId())
+                            .status(1)
+                            .loginAt(LocalDateTime.now())
+                            .build()
+            );
+        }
+
         return jwtTokenProvider.createToken(userEntity.getUsername(), userEntity.getRoles());
+    }
+
+    //회원 토큰 값 유효성 검사
+    @Transactional
+    public boolean validToken(String token) {
+        return jwtTokenProvider.validateToken(token);
     }
 
     // 회원 가입, 회원 정보 저장
@@ -67,10 +96,23 @@ public class UserService implements UserDetailsService {
                 .departmentId(userDto.getDepartmentId())
                 .studentId(userDto.getStudentId())
                 .gender(userDto.getGender())
-                .role(userDto.getRole())
                 .loginType(userDto.getLoginType())
                 .imagePath(userDto.getImagePath())
+                .createAt(LocalDateTime.now())
+                .modifiedAt(LocalDateTime.now())
+                .roles(Collections.singletonList("일반회원"))
                 .build()).getId();
+    }
+
+    //토큰값을 받아서 로그아웃
+    @Transactional
+    public String logout(String token, UserEntity userEntity) {
+        String email = jwtTokenProvider.getUserPk(token);
+        System.out.println(email);
+
+        LocalDateTime loginAt = userIsLoginedRepository.findByLoginAt(userEntity.getId());
+        userIsLoginedRepository.updateLogoutAt(LocalDateTime.now(),loginAt,userEntity.getId());
+        return "로그아웃을 완료하였습니다.";
     }
 
     //unique한 email로 해당 회원 한명 프로필 정보 조회
@@ -114,7 +156,6 @@ public class UserService implements UserDetailsService {
                     .departmentId(userDto.getDepartmentId())
                     .studentId(userDto.getStudentId())
                     .gender(userDto.getGender())
-                    .role(userDto.getRole())
                     .loginType(userDto.getLoginType())
                     .imagePath(userDto.getImagePath())
                     .build();
