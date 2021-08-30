@@ -48,8 +48,6 @@ public class UserEntity implements UserDetails {
     @Column(name = "gender")
     private Integer gender;
 
-    @Column(name = "role")
-    private Integer role;
 
     @Column(name = "loginType")
     private Integer loginType;
@@ -63,11 +61,17 @@ public class UserEntity implements UserDetails {
     @Column(name = "modifiedAt")
     private LocalDateTime modifiedAt;
 
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(
+            name = "role",
+            joinColumns = @JoinColumn(name = "id")
+    )
+    private List<String> roles = new ArrayList<>();
 
     @Builder
     public UserEntity(Integer id, String email, String password, String userName, String nickname,
                       DepartmentEntity departmentId, String studentId,
-                      Integer gender, Integer role, Integer loginType, String imagePath,
+                      Integer gender, List<String> roles, Integer loginType, String imagePath,
                       LocalDateTime createAt, LocalDateTime modifiedAt) {
         this.id = id;
         this.email = email;
@@ -77,32 +81,21 @@ public class UserEntity implements UserDetails {
         this.departmentId = departmentId;
         this.studentId = studentId;
         this.gender = gender;
-        this.role = role;
+        this.roles = roles;
         this.loginType = loginType;
         this.imagePath = imagePath;
         this.createAt = createAt;
         this.modifiedAt = modifiedAt;
     }
 
-    @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(
-            name = "role",
-            joinColumns = @JoinColumn(name = "id")
-    )
-    private List<String> roles = new ArrayList<>();
-
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-
-        List<Integer> roles = new ArrayList<>();
-        roles.add(0);
-        roles.add(1);
         return this.roles.stream()
                 .map(SimpleGrantedAuthority::new)
                 .collect(Collectors.toList());
     }
 
-    // 사용자의 id를 반환 (unique한 값)
+    // 사용자의 email를 반환 (unique한 값)
     @Override
     public String getUsername() {
         return email;

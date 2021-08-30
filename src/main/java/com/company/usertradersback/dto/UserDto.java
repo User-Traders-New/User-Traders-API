@@ -5,6 +5,8 @@ import com.company.usertradersback.entity.UserEntity;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Setter
@@ -37,8 +39,8 @@ public class UserDto {
     // 회원 성별 0:남자,1:여자
     private Integer gender;
 
-    // 회원 역활 0:일반,1:관리자
-    private Integer role;
+    // 회원 역활
+    private List<String> roles = new ArrayList<>();
 
     // 회원 로그인 종류 0:일반,1:카카오
     private Integer loginType;
@@ -55,7 +57,7 @@ public class UserDto {
     @Builder
     public UserDto(Integer id, String email, String password, String userName, String nickname,
                    DepartmentEntity departmentId, String studentId,
-                   Integer gender, Integer role, Integer loginType, String imagePath,
+                   Integer gender, List<String> roles, Integer loginType, String imagePath,
                    LocalDateTime createAt, LocalDateTime modifiedAt) {
         this.id = id;
         this.email = email;
@@ -65,7 +67,7 @@ public class UserDto {
         this.departmentId = departmentId;
         this.studentId = studentId;
         this.gender = gender;
-        this.role = role;
+        this.roles = roles;
         this.loginType = loginType;
         this.imagePath = imagePath;
         this.createAt = createAt;
@@ -83,7 +85,7 @@ public class UserDto {
                 .departmentId(departmentId)
                 .studentId(studentId)
                 .gender(gender)
-                .role(role)
+                .roles(roles)
                 .loginType(loginType)
                 .imagePath(imagePath)
                 .createAt(createAt)
@@ -95,7 +97,6 @@ public class UserDto {
     public UserDto UserEntityToDto(UserEntity userEntity) {
         return UserDto.builder()
                 .id(userEntity.getId())
-
                 .build();
     }
 
