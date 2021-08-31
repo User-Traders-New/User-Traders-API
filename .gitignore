@@ -31,6 +31,7 @@ out/
 !**/src/main/resources/application.properties
 /src/main/resources/application.yml
 /src/main/java/com/company/usertradersback/env/
+/src/main/java/com/company/usertradersback/config/s3/S3key.java
 
 ### NetBeans ###
 /nbproject/private/
