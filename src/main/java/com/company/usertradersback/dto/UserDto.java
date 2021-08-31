@@ -2,6 +2,7 @@ package com.company.usertradersback.dto;
 
 import com.company.usertradersback.entity.DepartmentEntity;
 import com.company.usertradersback.entity.UserEntity;
+import com.company.usertradersback.payload.Payload;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -14,6 +15,9 @@ import java.util.List;
 @NoArgsConstructor
 //회원
 public class UserDto {
+
+    // 고정 페이로드
+    private Payload payload;
 
     // 회원 고유번호
     private Integer id;
@@ -55,10 +59,11 @@ public class UserDto {
     private LocalDateTime modifiedAt;
 
     @Builder
-    public UserDto(Integer id, String email, String password, String userName, String nickname,
+    public UserDto(Payload payload,Integer id, String email, String password, String userName, String nickname,
                    DepartmentEntity departmentId, String studentId,
                    Integer gender, List<String> roles, Integer loginType, String imagePath,
                    LocalDateTime createAt, LocalDateTime modifiedAt) {
+        this.payload =payload;
         this.id = id;
         this.email = email;
         this.password = password;
@@ -74,7 +79,8 @@ public class UserDto {
         this.modifiedAt = modifiedAt;
     }
 
-    //회원 정보 추가를 위한 엔티티 - 디티오 변환 ,그러나 안쓰고 직접 빌드 하여 사용했다.
+    //회원 가입 정보 추가를 위한 UserDto -> UserEntity 변환
+    // 그러나 안쓰고 직접 빌더 패턴을 이용하였다.
     public UserEntity convertDtoToEntity() {
         return UserEntity.builder()
                 .id(id)
@@ -93,10 +99,23 @@ public class UserDto {
                 .build();
     }
 
-    //나중에 쓸 일 있을것 같아서 유저정보들 객체에 담아놨음
+    //프로필 조회할 때 DB에서 꺼낸 전체 UserEntity -> UserDto 바꿈
     public UserDto UserEntityToDto(UserEntity userEntity) {
         return UserDto.builder()
+                .payload(null)
                 .id(userEntity.getId())
+                .email(userEntity.getEmail())
+                .password(userEntity.getPassword())
+                .userName(userEntity.getUsername())
+                .nickname(userEntity.getNickname())
+                .departmentId(userEntity.getDepartmentId())
+                .studentId(userEntity.getStudentId())
+                .gender(userEntity.getGender())
+                .roles(userEntity.getRoles())
+                .loginType(userEntity.getLoginType())
+                .imagePath(userEntity.getImagePath())
+                .createAt(userEntity.getCreateAt())
+                .modifiedAt(userEntity.getModifiedAt())
                 .build();
     }
 

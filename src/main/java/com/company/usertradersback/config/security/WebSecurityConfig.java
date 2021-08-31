@@ -1,4 +1,4 @@
-package com.company.usertradersback.config.securyrity;
+package com.company.usertradersback.config.security;
 
 import com.company.usertradersback.config.jwt.JwtAuthenticationFilter;
 import com.company.usertradersback.config.jwt.JwtTokenProvider;
@@ -25,6 +25,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     public void configure(WebSecurity web) {
         web.ignoring().antMatchers("/css/**", "/js/**", "/images/**","/assets/**");
     }
+
 
     // 암호화에 필요한 PasswordEncoder 를 Bean 등록합니다.
     @Bean

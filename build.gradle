@@ -17,20 +17,27 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
+
 	implementation 'io.jsonwebtoken:jjwt:0.9.1'
 	implementation 'com.googlecode.json-simple:json-simple:1.1.1'
 
+	compileOnly 'org.projectlombok:lombok:1.18.20'
+	annotationProcessor 'org.projectlombok:lombok:1.18.20'
+
+	testCompileOnly 'org.projectlombok:lombok:1.18.20'
+	testAnnotationProcessor 'org.projectlombok:lombok:1.18.20'
+
+	implementation platform('com.amazonaws:aws-java-sdk-bom:1.11.1000')
+	implementation 'com.amazonaws:aws-java-sdk-s3'
+	testCompileOnly group: 'junit', name: 'junit', version: '4.11'
+
 	compileOnly 'com.googlecode.json-simple:json-simple:1.1.1'
-	compileOnly 'org.projectlombok:lombok'
 
 	annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
-	annotationProcessor 'org.projectlombok:lombok'
 
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 
 	runtimeOnly 'mysql:mysql-connector-java'
-
-	testAnnotationProcessor('org.projectlombok:lombok')
 
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.springframework.security:spring-security-test'
