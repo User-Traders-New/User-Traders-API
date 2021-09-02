@@ -1,7 +1,9 @@
 package com.company.usertradersback.service;
 
 import com.company.usertradersback.config.jwt.JwtTokenProvider;
+import com.company.usertradersback.config.s3.AwsS3;
 import com.company.usertradersback.dto.UserDto;
+import com.company.usertradersback.entity.DepartmentEntity;
 import com.company.usertradersback.entity.UserEntity;
 import com.company.usertradersback.entity.UserIsLoginedEntity;
 import com.company.usertradersback.exception.user.ApiIllegalArgumentException;
@@ -16,11 +18,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.transaction.Transactional;
+import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
+
 
 @Service
 public class UserService implements UserDetailsService {
@@ -32,14 +33,19 @@ public class UserService implements UserDetailsService {
     private final UserIsLoginedRepository userIsLoginedRepository;
     private final JwtTokenProvider jwtTokenProvider;
     private final PasswordEncoder passwordEncoder;
+    private final AwsS3 awsS3;
 
     public UserService(@Lazy UserRepository userRepository,
                        @Lazy UserIsLoginedRepository userIsLoginedRepository,
-                       @Lazy JwtTokenProvider jwtTokenProvider, @Lazy PasswordEncoder passwordEncoder) {
+                       @Lazy JwtTokenProvider jwtTokenProvider,
+                       @Lazy PasswordEncoder passwordEncoder,
+                       @Lazy AwsS3 awsS3
+    ) {
         this.userRepository = userRepository;
         this.userIsLoginedRepository = userIsLoginedRepository;
         this.jwtTokenProvider = jwtTokenProvider;
         this.passwordEncoder = passwordEncoder;
+        this.awsS3 = awsS3;
     }
 
 //     Spring Security 필수 메소드 구현
@@ -65,10 +71,10 @@ public class UserService implements UserDetailsService {
         }
         int a = userIsLoginedRepository.checkId(userEntity.getId());
 
-        if(a>=1){
+        if (a >= 1) {
             LocalDateTime logoutAt = userIsLoginedRepository.findByLogoutAt(userEntity.getId());
-            userIsLoginedRepository.updateLoginAt(logoutAt,LocalDateTime.now(),userEntity.getId());
-        }else{
+            userIsLoginedRepository.updateLoginAt(logoutAt, LocalDateTime.now(), userEntity.getId());
+        } else {
             userIsLoginedRepository.save(
                     UserIsLoginedEntity.builder()
                             .id(userEntity.getId())
@@ -85,15 +91,17 @@ public class UserService implements UserDetailsService {
     public boolean validToken(String token) {
         return jwtTokenProvider.validateToken(token);
     }
+
     //토큰값을 받아서 로그아웃
     @Transactional
     public String logout(String token) {
         String email = jwtTokenProvider.getUserPk(token);
         Integer id = this.selectId(email);
         LocalDateTime loginAt = userIsLoginedRepository.findByLoginAt(id);
-        userIsLoginedRepository.updateLogoutAt(LocalDateTime.now(),loginAt,id);
+        userIsLoginedRepository.updateLogoutAt(LocalDateTime.now(), loginAt, id);
         return "로그 아웃을 완료하였습니다.";
     }
+
     // 회원 가입, 회원 정보 저장
     @Transactional
     public Integer register(UserDto userDto) {
@@ -116,13 +124,14 @@ public class UserService implements UserDetailsService {
 
     @Transactional
     public String emailCheck(String email) {
-        if (userRepository.selectEmailCount(email)>=1)
-                  return "중복된 이메일 입니다.";
+        if (userRepository.selectEmailCount(email) >= 1)
+            return "중복된 이메일 입니다.";
         else return "사용 가능한 이메일 입니다.";
     }
+
     @Transactional
     public String nickNameCheck(String nickname) {
-        if (userRepository.selectNicknameCount(nickname)>=1)
+        if (userRepository.selectNicknameCount(nickname) >= 1)
             return "중복된 닉네임 입니다.";
         else return "사용 가능한 닉네임 입니다.";
     }
@@ -146,15 +155,15 @@ public class UserService implements UserDetailsService {
 
     //token 값으로 구한 email로 pk,id 조회
     @Transactional
-    public Integer selectId(String email){
+    public Integer selectId(String email) {
         return userRepository.findIdByEmail(email);
     }
+
     //token 값으로 id를 구하여 회원 한명 프로필 정보 조회 (복잡한 코드 사용x)
     @Transactional
     public UserDto findUserByToken(String token) {
         String email = jwtTokenProvider.getUserPk(token);
         Integer id = this.selectId(email);
-        System.out.println(userRepository.findById(id));
         Optional<UserEntity> userEntityWrapper = userRepository.findById(id);
         UserEntity userEntity = userEntityWrapper.get();
         return UserDto.builder().build().UserEntityToDto(userEntity);
@@ -173,30 +182,82 @@ public class UserService implements UserDetailsService {
     @Transactional
     public Integer profileUpdate(UserDto userDto,
                                  String token,
-                                 List<MultipartFile> files) {
+                                 List<MultipartFile> files) throws ApiIllegalArgumentException {
+        if (files.isEmpty()) {
+            new ApiIllegalArgumentException("파일이 없습니다.");
+        }
+        String basePath = "profile/";
+
+        //files에 담긴 originalFilename,contenttype,size를 담을 공간
+        ArrayList<String> fileName = new ArrayList<String>();
+        ArrayList<String> fileType = new ArrayList<String>();
+        ArrayList<Long> fileLength = new ArrayList<Long>();
+
+        try {
+            for (int i = 0; i < files.size(); i++) {
+                fileName.add(LocalDateTime.now().toString()
+                        +"_"+files.get(i).getOriginalFilename());
+
+                fileType.add(files.get(i).getContentType());
+                fileLength.add(files.get(i).getSize());
+            }
+        } catch (IllegalStateException e) {
+            e.printStackTrace();
+        }
+
+        // 업로드 될 버킷 객체 url
+        String[] url  = new String[files.size()];
+
+        String Cur_imagePath = this.findUserByToken(token).getImagePath();
+        String del_imagePath_key ;
+
+        if(!(Cur_imagePath
+                == "https://usertradersbucket.s3.ap-northeast-2.amazonaws.com/basic/profile_img.gif" ||
+        Cur_imagePath == null)
+        ){
+            for (int i=0; i<files.size(); i++){
+                del_imagePath_key = Cur_imagePath.split("/")[3]+"/"+Cur_imagePath.split("/")[4];
+                awsS3.delete(del_imagePath_key);
+            }
+
+        }
+
+        //aws에 files에 담겨져온 이미지 파일을 업로드
+        for (int i = 0; i < files.size(); i++) {
+            try {
+                url[i] = awsS3.upload(files.get(i), basePath + fileName.get(i)
+                        , fileType.get(i), fileLength.get(i));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        //token에서 해당 유저 정보중 변경 불가능 한것들
         Integer id = this.findUserByToken(token).getId();
+        String email = this.findUserByToken(token).getEmail();
+        String password = this.findUserByToken(token).getPassword();
+        String nickname = this.findUserByToken(token).getNickname();
+        DepartmentEntity departmentId = this.findUserByToken(token).getDepartmentId();
+        LocalDateTime createAt = this.findUserByToken(token).getCreateAt();
+        // 버킷 객체 url
+        String imagePath
+                = "https://usertradersbucket.s3.ap-northeast-2.amazonaws.com/"+url[0];
 
-        System.out.println(files.size());
-        System.out.println(files);
-//
-//        AwsS3 awsS3 = new AwsS3();
-//        awsS3.upload();
-//
-//
-
+        //수정 시작
         Optional<UserEntity> userEntityWrapper = userRepository.findById(id);
         userEntityWrapper.ifPresent(userEntity -> {
             userEntity = UserEntity.builder()
-                    .id(userDto.getId())
-                    .email(userDto.getEmail())
-                    .password(passwordEncoder.encode(userDto.getPassword()))
+                    .id(id)
+                    .email(email)
+                    .password(password)
                     .userName(userDto.getUserName())
-                    .nickname(userDto.getNickname())
-                    .departmentId(userDto.getDepartmentId())
+                    .nickname(nickname)
+                    .departmentId(departmentId)
                     .studentId(userDto.getStudentId())
                     .gender(userDto.getGender())
                     .loginType(userDto.getLoginType())
-                    .imagePath(userDto.getImagePath())
+                    .imagePath(imagePath)
+                    .createAt(createAt)
+                    .modifiedAt(LocalDateTime.now())
                     .build();
             userRepository.save(userEntity);
         });
@@ -208,7 +269,6 @@ public class UserService implements UserDetailsService {
     public void deleteById(Integer id) {
         userRepository.deleteById(id);
     }
-
 
 
 }

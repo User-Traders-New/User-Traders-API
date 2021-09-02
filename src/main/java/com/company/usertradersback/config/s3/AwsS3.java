@@ -8,15 +8,18 @@ import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
-import com.amazonaws.services.s3.model.CopyObjectRequest;
 import com.amazonaws.services.s3.model.DeleteObjectRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
+import lombok.AllArgsConstructor;
+import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
 
+@AllArgsConstructor
+@Component
 public class AwsS3 {
 
     S3key s3key = new S3key();
@@ -29,10 +32,10 @@ public class AwsS3 {
     private String bucket = "usertradersbucket";
 
     private AwsS3() {
-        createS3Client();
+        this.createS3Client();
     }
 
-    //singleton pattern
+//    singleton pattern
     static private AwsS3 instance = null;
 
     public static AwsS3 getInstance() {
@@ -60,7 +63,7 @@ public class AwsS3 {
     }
 
     //MultipartFile로 받아서 InputStream을 이용하는 방법
-    public void upload(MultipartFile multipartFile, String key,
+    public String upload(MultipartFile multipartFile, String key,
                        String contentType, long contentLength)
             throws IOException {
 
@@ -71,9 +74,11 @@ public class AwsS3 {
         PutObjectRequest putObjectRequest = new PutObjectRequest(this.bucket, key, multipartFile.getInputStream(), objectMetadata);
 
         uploadToS3(putObjectRequest);
+
+        return putObjectRequest.getKey();
     }
 
-    //PutObjectRequest는 Aws S3 버킷에 업로드할 객체 메타 데이터와 파일 데이터로 이루어져있다.
+    //S3Client로 aws S3 버킷에 업로드
     private void uploadToS3(PutObjectRequest putObjectRequest) {
 
         try {
@@ -89,26 +94,26 @@ public class AwsS3 {
         }
     }
 
-    public void copy(String orgKey, String copyKey) {
-        try {
-            //Copy 객체 생성
-            CopyObjectRequest copyObjRequest = new CopyObjectRequest(
-                    this.bucket,
-                    orgKey,
-                    this.bucket,
-                    copyKey
-            );
-            //Copy
-            this.s3Client.copyObject(copyObjRequest);
-
-            System.out.println(String.format("Finish copying [%s] to [%s]", orgKey, copyKey));
-
-        } catch (AmazonServiceException e) {
-            e.printStackTrace();
-        } catch (SdkClientException e) {
-            e.printStackTrace();
-        }
-    }
+//    public void copy(String orgKey, String copyKey) {
+//        try {
+//            //Copy 객체 생성
+//            CopyObjectRequest copyObjRequest = new CopyObjectRequest(
+//                    this.bucket,
+//                    orgKey,
+//                    this.bucket,
+//                    copyKey
+//            );
+//            //Copy
+//            this.s3Client.copyObject(copyObjRequest);
+//
+//            System.out.println(String.format("Finish copying [%s] to [%s]", orgKey, copyKey));
+//
+//        } catch (AmazonServiceException e) {
+//            e.printStackTrace();
+//        } catch (SdkClientException e) {
+//            e.printStackTrace();
+//        }
+//    }
 
     public void delete(String key) {
         try {

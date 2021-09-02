@@ -8,7 +8,6 @@ import com.company.usertradersback.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -88,7 +87,7 @@ public class UserController {
     // 들어있는 jwt를 지운다. 그리고 UserIsLogined 날짜 및 상태값 수정하여 DB 저장
     @PostMapping(value = "/logout")
     public ResponseEntity logout(@RequestHeader("token") String token
-                                 ) {
+    ) {
         try {
             userService.logout(token);
             Payload payload = Payload.builder()
@@ -130,16 +129,17 @@ public class UserController {
             return new ResponseEntity<>(payload, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
     //이메일 중복검사 API
     @GetMapping(value = "/email-check")
     public ResponseEntity emailCheck(
-            @RequestParam("email")String email){
+            @RequestParam("email") String email) {
         try {
-                   UserEmailCheckDto userEmailCheckDto
-                           = UserEmailCheckDto.builder()
-                           .check(userService.emailCheck(email))
-                           .email(email)
-                           .build();
+            UserEmailCheckDto userEmailCheckDto
+                    = UserEmailCheckDto.builder()
+                    .check(userService.emailCheck(email))
+                    .email(email)
+                    .build();
             Payload payload = Payload.builder()
                     .message("이메일 검사에 성공하였습니다.")
                     .isSuccess(true)
@@ -147,7 +147,7 @@ public class UserController {
                     .build();
             userEmailCheckDto.setPayload(payload);
 
-           return new ResponseEntity<>(userEmailCheckDto,HttpStatus.OK);
+            return new ResponseEntity<>(userEmailCheckDto, HttpStatus.OK);
         } catch (Exception e) {
             e.printStackTrace();
             Payload payload = Payload.builder()
@@ -162,7 +162,7 @@ public class UserController {
     //닉네임 중복검사 API
     @GetMapping(value = "/nickname-check")
     public ResponseEntity nicknameCheck(
-            @RequestParam("nickname")String nickname){
+            @RequestParam("nickname") String nickname) {
         try {
             UserNicknameCheckDto userNicknameCheckDto
                     = UserNicknameCheckDto.builder()
@@ -176,7 +176,7 @@ public class UserController {
                     .build();
             userNicknameCheckDto.setPayload(payload);
 
-            return new ResponseEntity<>(userNicknameCheckDto,HttpStatus.OK);
+            return new ResponseEntity<>(userNicknameCheckDto, HttpStatus.OK);
         } catch (Exception e) {
             e.printStackTrace();
             Payload payload = Payload.builder()
@@ -187,13 +187,14 @@ public class UserController {
             return new ResponseEntity<>(payload, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
     // 회원 한명의 프로필 조회
     @GetMapping(value = "/profile") // 한 유저 상세 정보 단, 토큰 값이 있어야 가능
     public ResponseEntity profile(
             @RequestHeader("token") String token
-            ) {
+    ) {
         try {
-            if (userService.validToken(token)){
+            if (userService.validToken(token)) {
                 UserDto userDto = userService.profile(token);
                 Payload payload = Payload.builder()
                         .message("프로필 조회에 성공하였습니다.")
@@ -202,8 +203,8 @@ public class UserController {
                         .build();
                 userDto.setPayload(payload);
                 return new ResponseEntity<>(userDto, HttpStatus.OK);
-            }else {
-                return new ResponseEntity<>("토큰이 만료 되었습니다.",HttpStatus.EXPECTATION_FAILED);
+            } else {
+                return new ResponseEntity<>("토큰이 만료 되었습니다.", HttpStatus.EXPECTATION_FAILED);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -217,17 +218,17 @@ public class UserController {
     }
 
     // 회원 한명의 프로필 수정.
-    @PatchMapping(value = "profile/update/{id}")
+    @PatchMapping(value = "profile/update")
     public ResponseEntity profile(
             @RequestHeader("token") String token,
-            @RequestBody @Validated UserDto userDto,
+            UserDto userDto,
             List<MultipartFile> files
-                                  ) {
+    ) {
         try {
 
-            if (userService.validToken(token)){
+            if (userService.validToken(token)) {
 
-                userService.profileUpdate(userDto, token,files);
+                userService.profileUpdate(userDto, token, files);
 
                 Payload payload = Payload.builder()
                         .message("프로필 수정에 성공하였습니다.")
@@ -235,8 +236,8 @@ public class UserController {
                         .httpStatus(HttpStatus.OK)
                         .build();
                 return new ResponseEntity<>(payload, HttpStatus.OK);
-            }else {
-                return new ResponseEntity<>("토큰이 만료 되었습니다.",HttpStatus.EXPECTATION_FAILED);
+            } else {
+                return new ResponseEntity<>("토큰이 만료 되었습니다.", HttpStatus.EXPECTATION_FAILED);
             }
         } catch (Exception e) {
             e.printStackTrace();
