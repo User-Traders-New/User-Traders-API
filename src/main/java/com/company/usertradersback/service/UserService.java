@@ -3,7 +3,7 @@ package com.company.usertradersback.service;
 import com.company.usertradersback.config.jwt.JwtTokenProvider;
 import com.company.usertradersback.config.s3.AwsS3;
 import com.company.usertradersback.dto.UserDto;
-import com.company.usertradersback.entity.DepartmentEntity;
+import com.company.usertradersback.entity.UserDepartmentEntity;
 import com.company.usertradersback.entity.UserEntity;
 import com.company.usertradersback.entity.UserIsLoginedEntity;
 import com.company.usertradersback.exception.user.ApiIllegalArgumentException;
@@ -236,7 +236,7 @@ public class UserService implements UserDetailsService {
         String email = this.findUserByToken(token).getEmail();
         String password = this.findUserByToken(token).getPassword();
         String nickname = this.findUserByToken(token).getNickname();
-        DepartmentEntity departmentId = this.findUserByToken(token).getDepartmentId();
+        UserDepartmentEntity departmentId = this.findUserByToken(token).getDepartmentId();
         LocalDateTime createAt = this.findUserByToken(token).getCreateAt();
         // 버킷 객체 url
         String imagePath

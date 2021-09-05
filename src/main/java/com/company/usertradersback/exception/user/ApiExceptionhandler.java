@@ -38,16 +38,16 @@ public class ApiExceptionhandler {
         return new ResponseEntity<>(apiException, badRequest);
     }
 
-//    //NullPointerException
-//    @ExceptionHandler(value = {NullPointerException.class,
-//            ApiNullPointerException.class})
-//    public ResponseEntity<Object> handleApiNullPointerException(ApiNullPointerException e) {
-//        HttpStatus badRequest = HttpStatus.INTERNAL_SERVER_ERROR;
-//        ApiExceptionInfo apiException = new ApiExceptionInfo(
-//                e.getMessage(),
-//                badRequest,
-//                ZonedDateTime.now(ZoneId.of("Z"))
-//        );
-//        return new ResponseEntity<>(apiException, badRequest);
-//    }
+    //NullPointerException
+    @ExceptionHandler(value = {NullPointerException.class,
+            ApiNullPointerException.class})
+    public ResponseEntity<Object> handleApiNullPointerException(ApiNullPointerException e) {
+        HttpStatus badRequest = HttpStatus.INTERNAL_SERVER_ERROR;
+        ApiExceptionInfo apiException = new ApiExceptionInfo(
+                e.getMessage(),
+                badRequest,
+                ZonedDateTime.now(ZoneId.of("Z"))
+        );
+        return new ResponseEntity<>(apiException, badRequest);
+    }
 }

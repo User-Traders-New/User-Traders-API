@@ -1,7 +1,16 @@
 package com.company.usertradersback.dto;
 
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.time.LocalDateTime;
 
+
+@Getter
+@Setter
+@NoArgsConstructor
+//해당 회원이 로그인한지 안한지를 확인하는 UserIsLoginedDto
 public class UserIsLoginedDto {
     // 회원 고유번호
     private Integer id;
