@@ -40,7 +40,7 @@ public class UserEntity implements UserDetails {
 
     @ManyToOne
     @JoinColumn(name = "departmentId")
-    private DepartmentEntity departmentId;
+    private UserDepartmentEntity departmentId;
 
     @Column(name = "studentId")
     private String studentId;
@@ -70,7 +70,7 @@ public class UserEntity implements UserDetails {
 
     @Builder
     public UserEntity(Integer id, String email, String password, String userName, String nickname,
-                      DepartmentEntity departmentId, String studentId,
+                      UserDepartmentEntity departmentId, String studentId,
                       Integer gender, List<String> roles, Integer loginType, String imagePath,
                       LocalDateTime createAt, LocalDateTime modifiedAt) {
         this.id = id;

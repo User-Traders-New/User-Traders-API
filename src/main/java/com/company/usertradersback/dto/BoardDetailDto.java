@@ -9,20 +9,15 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-//로그인시 해당 회원에게 토큰값을 주는 UserTokenDto (responseDto)
-public class UserTokenDto {
+public class BoardDetailDto {
 
-    // 고정 페이로드
     private Payload payload;
 
-    // 로그인 토큰값
-    private String token;
-
+    private BoardDto boardDto;
 
     @Builder
-    public UserTokenDto(Payload payload,String token){
+    public BoardDetailDto(Payload payload ,BoardDto boardDto ){
         this.payload = payload;
-        this.token =token;
+        this.boardDto = boardDto;
     }
-
 }

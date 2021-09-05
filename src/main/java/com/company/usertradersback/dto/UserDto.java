@@ -1,6 +1,6 @@
 package com.company.usertradersback.dto;
 
-import com.company.usertradersback.entity.DepartmentEntity;
+import com.company.usertradersback.entity.UserDepartmentEntity;
 import com.company.usertradersback.entity.UserEntity;
 import com.company.usertradersback.payload.Payload;
 import lombok.*;
@@ -11,9 +11,9 @@ import java.util.List;
 
 @Getter
 @Setter
-@ToString
 @NoArgsConstructor
-//회원
+//회원 가입을 위한 회원 한명 전체 UserDto (requestDto) 및
+//회원 한명 전체를 조회하기 위한 UserDto (responseDto)
 public class UserDto {
 
     // 고정 페이로드
@@ -35,7 +35,7 @@ public class UserDto {
     private String nickname;
 
     // 회원 학과 고유번호
-    private DepartmentEntity departmentId;
+    private UserDepartmentEntity departmentId;
 
     // 회원 학번
     private String studentId;
@@ -59,8 +59,8 @@ public class UserDto {
     private LocalDateTime modifiedAt;
 
     @Builder
-    public UserDto(Payload payload,Integer id, String email, String password, String userName, String nickname,
-                   DepartmentEntity departmentId, String studentId,
+    public UserDto(Payload payload, Integer id, String email, String password, String userName, String nickname,
+                   UserDepartmentEntity departmentId, String studentId,
                    Integer gender, List<String> roles, Integer loginType, String imagePath,
                    LocalDateTime createAt, LocalDateTime modifiedAt) {
         this.payload =payload;
