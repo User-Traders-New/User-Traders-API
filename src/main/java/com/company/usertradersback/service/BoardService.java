@@ -1,15 +1,14 @@
 package com.company.usertradersback.service;
 
+import com.company.usertradersback.config.s3.AwsS3;
 import com.company.usertradersback.dto.BoardCategoryDto;
 import com.company.usertradersback.dto.BoardDto;
 import com.company.usertradersback.dto.BoardSubCategoryDto;
-import com.company.usertradersback.entity.BoardCategoryEntity;
-import com.company.usertradersback.entity.BoardEntity;
-import com.company.usertradersback.entity.BoardSubCategoryEntity;
-import com.company.usertradersback.entity.UserEntity;
+import com.company.usertradersback.entity.*;
 import com.company.usertradersback.exception.user.ApiIllegalArgumentException;
 import com.company.usertradersback.exception.user.ApiNullPointerException;
 import com.company.usertradersback.repository.BoardCategoryRepository;
+import com.company.usertradersback.repository.BoardImageRepository;
 import com.company.usertradersback.repository.BoardRepository;
 import com.company.usertradersback.repository.BoardSubCategoryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,9 +16,14 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.transaction.Transactional;
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -35,7 +39,11 @@ public class BoardService {
     private BoardSubCategoryRepository boardSubCategoryRepository;
 
     @Autowired
-    private UserService userService;
+    private BoardImageRepository boardImageRepository;
+
+    @Autowired
+    private AwsS3 awsS3;
+
 
     //게시물 전체 조회
     @Transactional
@@ -83,10 +91,11 @@ public class BoardService {
         }).collect(Collectors.toList());
         return results;
     }
+
     //대분류 카테고리 + 서브카테고리를 통해 해당 게시물 전체 목록 조회
     @Transactional
-    public List<BoardDto> searchCategory(Integer categoryId,Integer subCategoryId) {
-        List<BoardEntity> boardEntityList = boardRepository.selectAll(categoryId,subCategoryId);
+    public List<BoardDto> searchCategory(Integer categoryId, Integer subCategoryId) {
+        List<BoardEntity> boardEntityList = boardRepository.selectAll(categoryId, subCategoryId);
         List<BoardDto> results = boardEntityList.stream().map(boardEntity -> {
             BoardDto boardDto = BoardDto.builder()
                     .build().convertEntityToDto(boardEntity);
@@ -95,9 +104,10 @@ public class BoardService {
 
         return results;
     }
+
     //회원 정보를 이용하여 해당 회원의 게시물 전체 목록 조회
     @Transactional
-    public List<BoardDto> listMyBoards(UserEntity userEntity){
+    public List<BoardDto> listMyBoards(UserEntity userEntity) {
         if (userEntity == null) {
             throw new ApiNullPointerException("유저정보가 없습니다.");
         }
@@ -122,9 +132,10 @@ public class BoardService {
         }).collect(Collectors.toList());
         return results;
     }
+
     //대분류 카테고리 조회
     @Transactional
-    public List<BoardSubCategoryDto> listSubCategoryId(){
+    public List<BoardSubCategoryDto> listSubCategoryId() {
         List<BoardSubCategoryEntity> categoryEntityList = boardSubCategoryRepository.findAll();
 
         List<BoardSubCategoryDto> results = categoryEntityList.stream().map(categoryEntity -> {
@@ -140,7 +151,7 @@ public class BoardService {
 
     //서브 카테고리 조회
     @Transactional
-    public List<BoardCategoryDto> listCategoryId(Integer subCategoryId){
+    public List<BoardCategoryDto> listCategoryId(Integer subCategoryId) {
         List<BoardCategoryEntity> categoryEntityList = boardCategoryRepository.findAllBySubCategoryId_Id(subCategoryId);
 
         List<BoardCategoryDto> results = categoryEntityList.stream().map(categoryEntity -> {
@@ -156,63 +167,175 @@ public class BoardService {
     }
 
 
-//    @Transactional
-//    public Integer save(BoardDto boardDto, List<MultipartFile> files, UserEntity user) { // 한 객체를 보드 테이블에 저장, 파일까지 저장
-//        String baseDir = "\\home\\ec2-user\\apps\\IC-Capstone-User-Traders\\UserTraders-frontend\\src\\assets\\images\\";
-//        String[] fileName = new String[3];
-//        if (files != null) {
-//            try {
-//                for (int i = 0; i < files.size(); i++) {
-//                    fileName[i] = files.get(i).getOriginalFilename();
-//                    //transferTo() 를 사용하면 파일데이터를 지정한 파일로 저장.
-//                    files.get(i).transferTo(new File(baseDir + files.get(i).getOriginalFilename()));
-//                }
-//            } catch (IllegalStateException | IOException e) {
-//                e.printStackTrace();
-//            }
-//        }
-//        boardDto.setImageurl1(fileName[0]);
-//        boardDto.setImageurl2(fileName[1]);
-//        boardDto.setImageurl3(fileName[2]);
-//        boardDto.setUser(user);
-//        boardDto.setStatus(true);
-//
-//        BoardEntity boardEntity = boardDto.convertDtoToEntity();
-//        return boardRepository.save(boardEntity).getId();
-//    }
-//
-//    @Transactional
-//    public Integer save(BoardDto boardDto) { // 한 객체를 보드 테이블에 저장
-//        BoardEntity boardEntity = boardDto.convertDtoToEntity();
-//        return boardRepository.save(boardEntity).getId();
-//    }
-//
-//
-//
-//    @Transactional
-//    public Integer updateById(BoardDto boardDto, Integer id) {
-//        BoardDto board = this.findById(id);
-//
-//        // 요청 받은 수정할 객체 정보를 건내받고 , 그 객체의 아이디를 뽑아서  수정전 정보를 wrapper에 담고
-//        // 수정 할 객체 정보를 수정전 객체 정보에 저장 ,  수정 끝
-//        //Optinal 클래스의 ifPresent 함수의 사용: 수정값에 null이 있는지 확인하는 if문을 줄이기 위함
-//        Optional<BoardEntity> boardEntityWrapper = boardRepository.findById(boardDto.getId());
-//        boardEntityWrapper.ifPresent(boardEntity -> {
-//            boardEntity = BoardEntity.builder()
-//                    .id(boardDto.getId())
-//                    .title(boardDto.getTitle())
-//                    .content(boardDto.getContent())
-//                    .price(boardDto.getPrice())
-//                    .imageurl1(board.getImageurl1())
-//                    .imageurl2(board.getImageurl2())
-//                    .imageurl3(board.getImageurl3())
-//                    .category(board.getCategory())
-//                    .user(board.getUser())
-//                    .status(board.getStatus()).build();
-//            boardRepository.save(boardEntity);
-//        });
-//        return boardEntityWrapper.get().getId();
-//    }
+    @Transactional
+    public Integer register(BoardDto boardDto, List<MultipartFile> files, UserEntity user) { // 한 객체를 보드 테이블에 저장, 파일까지 저장
+
+        String basePath = "board/";
+
+        //files에 담긴 originalFilename,contenttype,size를 담을 공간
+        ArrayList<String> fileName = new ArrayList<String>();
+        ArrayList<String> fileType = new ArrayList<String>();
+        ArrayList<Long> fileLength = new ArrayList<Long>();
+
+        try {
+            for (int i = 0; i < files.size(); i++) {
+                fileName.add(LocalDateTime.now().toString()
+                        + "_" + files.get(i).getOriginalFilename());
+                fileType.add(files.get(i).getContentType());
+                fileLength.add(files.get(i).getSize());
+            }
+        } catch (IllegalStateException e) {
+            e.printStackTrace();
+        }
+
+        // 업로드 될 버킷 객체 url
+        String[] url = new String[files.size()];
+        
+        // 버킷 객체 url , 데이터 베이스에 들어갈 url
+        String[] imagePath = new String[files.size()];
+
+        //aws에 files에 담겨져온 이미지 파일을 업로드
+        for (int i = 0; i < files.size(); i++) {
+            try {
+                url[i] = awsS3.upload(files.get(i), basePath + fileName.get(i)
+                        , fileType.get(i), fileLength.get(i));
+
+                // 버킷 객체 url , 데이터 베이스에 들어갈 url
+                imagePath[i]
+                        = "https://usertradersbucket.s3.ap-northeast-2.amazonaws.com/" + url[i];
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        //게시물 정보 저장
+        BoardEntity boardEntity = boardRepository.save(
+                BoardEntity.builder()
+                        .title(boardDto.getTitle())
+                        .userId(user)
+                        .content(boardDto.getContent())
+                        .price(boardDto.getPrice())
+                        .categoryId(boardDto.getCategoryId())
+                        .views(boardDto.getViews())
+                        .grade(boardDto.getGrade())
+                        .status(boardDto.getStatus())
+                        .createAt(LocalDateTime.now())
+                        .modifiedAt(LocalDateTime.now())
+                        .build());
+
+        //게시물 이미지 정보 저장
+        for (int i = 0; i < files.size(); i++) {
+            boardImageRepository.save(BoardImageEntity.builder()
+                    .boardId(boardEntity)
+                    .path(imagePath[i])
+                    .type(fileType.get(i))
+                    .size(fileLength.get(i))
+                    .createAt(boardEntity.getCreateAt())
+                    .modifiedAt(boardEntity.getModifiedAt())
+                    .build()
+            ).getId();
+        }
+        //게시물 정보 저장 
+        return boardEntity.getId();
+    }
+
+    @Transactional
+    public Integer update(List<MultipartFile> files, BoardDto boardDto,
+                           UserEntity user) {
+
+        String basePath = "board/";
+
+        //files에 담긴 originalFilename,contenttype,size를 담을 공간
+        ArrayList<String> fileName = new ArrayList<String>();
+        ArrayList<String> fileType = new ArrayList<String>();
+        ArrayList<Long> fileLength = new ArrayList<Long>();
+
+        try {
+            for (int i = 0; i < files.size(); i++) {
+                fileName.add(LocalDateTime.now().toString()
+                        + "_" + files.get(i).getOriginalFilename());
+                fileType.add(files.get(i).getContentType());
+                fileLength.add(files.get(i).getSize());
+            }
+        } catch (IllegalStateException e) {
+            e.printStackTrace();
+        }
+
+
+        // 업로드 될 버킷 객체 url
+        String[] url = new String[files.size()];
+        System.out.println(boardDto.getId());
+        //현재 해당 유저가 가지고 있는 board의 id로 들어있는 이미지 경로
+        List<String> Cur_imagePath = boardImageRepository.findByPath(boardDto.getId());
+
+        //원래 있었던 s3에 있는 이미지 삭제
+        String[] del_imagePath_key = new String[Cur_imagePath.size()];
+
+        for (int i = 0; i < Cur_imagePath.size(); i++) {
+            if (!(Cur_imagePath.get(i) == null)
+            ) {
+                del_imagePath_key[i] = Cur_imagePath.get(i).split("/")[3] + "/" + Cur_imagePath.get(i).split("/")[4];
+                awsS3.delete(del_imagePath_key[i]);
+            }
+
+        }
+        // 버킷 객체 url , 데이터 베이스에 들어갈 url
+        List<String> imagePath = new ArrayList<>();
+
+        //aws에 files에 담겨져온 이미지 파일을 업로드
+        for (int i = 0; i < files.size(); i++) {
+            try {
+                url[i] = awsS3.upload(files.get(i), basePath + fileName.get(i)
+                        , fileType.get(i), fileLength.get(i));
+
+                // 버킷 객체 url , 데이터 베이스에 들어갈 url
+                imagePath.add(i,"https://usertradersbucket.s3.ap-northeast-2.amazonaws.com/" + url[i]);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        //게시물 정보 수정
+        // 요청 받은 수정할 객체 정보를 건내받고 , 그 객체의 아이디를 뽑아서 수정전 정보를 wrapper에 담고
+        // 수정 할 객체 정보를 수정전 객체 정보에 저장 ,  수정 끝
+        //Optinal 클래스의 ifPresent 함수의 사용: 수정값에 null이 있는지 확인하는 if문을 줄이기 위함
+        Optional<BoardEntity> boardEntityWrapper = boardRepository.findById(boardDto.getId());
+        boardEntityWrapper.ifPresent(boardEntity -> {
+            boardEntity = BoardEntity.builder()
+                    .id(boardDto.getId())
+                    .title(boardDto.getTitle())
+                    .userId(user)
+                    .content(boardDto.getContent())
+                    .price(boardDto.getPrice())
+                    .categoryId(boardDto.getCategoryId())
+                    .views(boardDto.getViews())
+                    .grade(boardDto.getGrade())
+                    .status(boardDto.getStatus())
+                    .createAt(boardEntityWrapper.get().getCreateAt())
+                    .modifiedAt(LocalDateTime.now())
+                    .build();
+            boardRepository.save(boardEntity);
+        });
+
+
+        //게시물 이미지 정보 수정 -> 해당 게시물 이미지 삭제 후 다시 저장
+        //원래 게시물 이미지 삭제
+        boardImageRepository.deleteAllByBoardId(boardDto.getId());
+        // 새로운 이미지 저장
+        for (int i = 0; i < files.size(); i++) {
+            boardImageRepository.save(BoardImageEntity.builder()
+                    .boardId(boardEntityWrapper.get())
+                    .path(imagePath.get(i))
+                    .type(fileType.get(i))
+                    .size(fileLength.get(i))
+                    .createAt(boardEntityWrapper.get().getCreateAt())
+                    .modifiedAt(boardEntityWrapper.get().getModifiedAt())
+                    .build()
+            ).getId();
+        }
+
+        return boardEntityWrapper.get().getId();
+    }
 
     @Transactional
     public void deleteById(Integer id) {

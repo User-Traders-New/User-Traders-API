@@ -52,8 +52,13 @@ public class UserController {
     // 로그인
     @PostMapping("/login")
     public ResponseEntity login(@RequestBody Map<String, String> user) {
-
         try {
+            if(!user.containsKey("email")){
+                return new ResponseEntity<>("이메일을 입력해주세요.", HttpStatus.BAD_REQUEST);
+            }
+            if(!user.containsKey("password")){
+                return new ResponseEntity<>("비밀번호를 입력해주세요.", HttpStatus.BAD_REQUEST);
+            }
             //로그인, 반환값 token
             String token = userService.login(user);
 
@@ -89,6 +94,9 @@ public class UserController {
     public ResponseEntity logout(@RequestHeader("token") String token
     ) {
         try {
+            if(token == null){
+                return new ResponseEntity<>("요청값에 토큰값이 없습니다.", HttpStatus.BAD_REQUEST);
+            }
             userService.logout(token);
             Payload payload = Payload.builder()
                     .message("로그아웃에 성공하였습니다.")
@@ -112,6 +120,39 @@ public class UserController {
     @PostMapping(value = "/register")
     public ResponseEntity register(@RequestBody UserDto userDto) {
         try {
+            if(userDto.getEmail()==null){
+                return new ResponseEntity<>("이메일을 입력해주세요.", HttpStatus.BAD_REQUEST);
+            }
+            if(userDto.getEmail().length()>25){
+                return new ResponseEntity<>("이메일은 25자를 넘을 수 없습니다.", HttpStatus.BAD_REQUEST);
+            }
+            if(userDto.getPassword()==null){
+                return new ResponseEntity<>("비밀번호를 입력해주세요.", HttpStatus.BAD_REQUEST);
+            }
+            if(userDto.getPassword().length()<8){
+                return new ResponseEntity<>("비밀번호는 8자 이상 입력해주세요.", HttpStatus.BAD_REQUEST);
+            }
+            if(userDto.getUserName()==null){
+                return new ResponseEntity<>("이름을 입력해주세요.", HttpStatus.BAD_REQUEST);
+            }
+            if(userDto.getNickname()==null){
+                return new ResponseEntity<>("닉네임을 입력해주세요.", HttpStatus.BAD_REQUEST);
+            }
+            if(userDto.getNickname().length()>10){
+                return new ResponseEntity<>("닉네임은 10자를 넘을 수 없습니다.", HttpStatus.BAD_REQUEST);
+            }
+            if(userDto.getNickname().length()<2){
+                return new ResponseEntity<>("닉네임은 2자 이상 입력해주세요.", HttpStatus.BAD_REQUEST);
+            }
+            if(userDto.getDepartmentId()==null){
+                return new ResponseEntity<>("학과번호를 입력해주세요.", HttpStatus.BAD_REQUEST);
+            }
+            if(userDto.getGender()==null){
+                return new ResponseEntity<>("성별을 입력해주세요.", HttpStatus.BAD_REQUEST);
+            }
+            if(userDto.getLoginType()==null){
+                return new ResponseEntity<>("로그인 유형을 입력해주세요.", HttpStatus.BAD_REQUEST);
+            }
             userService.register(userDto);
             Payload payload = Payload.builder()
                     .message("회원가입에 성공하였습니다.")
@@ -135,6 +176,9 @@ public class UserController {
     public ResponseEntity emailCheck(
             @RequestParam("email") String email) {
         try {
+            if(email == null){
+                return new ResponseEntity<>("이메일을 입력해주세요.", HttpStatus.BAD_REQUEST);
+            }
             UserEmailCheckDto userEmailCheckDto
                     = UserEmailCheckDto.builder()
                     .check(userService.emailCheck(email))
@@ -164,6 +208,9 @@ public class UserController {
     public ResponseEntity nicknameCheck(
             @RequestParam("nickname") String nickname) {
         try {
+            if(nickname == null){
+                return new ResponseEntity<>("닉네임을 입력해주세요.", HttpStatus.BAD_REQUEST);
+            }
             UserNicknameCheckDto userNicknameCheckDto
                     = UserNicknameCheckDto.builder()
                     .check(userService.nickNameCheck(nickname))
@@ -194,6 +241,9 @@ public class UserController {
             @RequestHeader("token") String token
     ) {
         try {
+            if(token == null){
+                return new ResponseEntity<>("요청값에 토큰값이 없습니다.", HttpStatus.BAD_REQUEST);
+            }
             if (userService.validToken(token)) {
                 UserDto userDto = userService.profile(token);
                 Payload payload = Payload.builder()
@@ -204,7 +254,7 @@ public class UserController {
                 userDto.setPayload(payload);
                 return new ResponseEntity<>(userDto, HttpStatus.OK);
             } else {
-                return new ResponseEntity<>("토큰이 만료 되었습니다.", HttpStatus.EXPECTATION_FAILED);
+                return new ResponseEntity<>("토큰이 만료 되었습니다.", HttpStatus.UNAUTHORIZED);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -225,7 +275,48 @@ public class UserController {
             List<MultipartFile> files
     ) {
         try {
-
+            if(userDto.getEmail()==null){
+                return new ResponseEntity<>("이메일을 입력해주세요.", HttpStatus.BAD_REQUEST);
+            }
+            if(userDto.getEmail().length()>25){
+                return new ResponseEntity<>("이메일은 25자를 넘을 수 없습니다.", HttpStatus.BAD_REQUEST);
+            }
+            if(userDto.getPassword()==null){
+                return new ResponseEntity<>("비밀번호를 입력해주세요.", HttpStatus.BAD_REQUEST);
+            }
+            if(userDto.getPassword().length()<8){
+                return new ResponseEntity<>("비밀번호는 8자 이상 입력해주세요.", HttpStatus.BAD_REQUEST);
+            }
+            if(userDto.getUserName()==null){
+                return new ResponseEntity<>("이름을 입력해주세요.", HttpStatus.BAD_REQUEST);
+            }
+            if(userDto.getNickname()==null){
+                return new ResponseEntity<>("닉네임을 입력해주세요.", HttpStatus.BAD_REQUEST);
+            }
+            if(userDto.getNickname().length()>10){
+                return new ResponseEntity<>("닉네임은 10자를 넘을 수 없습니다.", HttpStatus.BAD_REQUEST);
+            }
+            if(userDto.getNickname().length()<2){
+                return new ResponseEntity<>("닉네임은 2자 이상 입력해주세요.", HttpStatus.BAD_REQUEST);
+            }
+            if(userDto.getDepartmentId()==null){
+                return new ResponseEntity<>("학과번호를 입력해주세요.", HttpStatus.BAD_REQUEST);
+            }
+            if(userDto.getGender()==null){
+                return new ResponseEntity<>("성별을 입력해주세요.", HttpStatus.BAD_REQUEST);
+            }
+            if(userDto.getLoginType()==null){
+                return new ResponseEntity<>("로그인 유형을 입력해주세요.", HttpStatus.BAD_REQUEST);
+            }
+            if (files.get(0).getSize() == 0) {
+                return new ResponseEntity<>("파일이 없습니다.", HttpStatus.BAD_REQUEST);
+            }
+            if(token == null){
+                return new ResponseEntity<>("요청값에 토큰값이 없습니다.", HttpStatus.BAD_REQUEST);
+            }
+            if (files.get(0).getSize() == 0) {
+                return new ResponseEntity<>("파일이 없습니다.", HttpStatus.BAD_REQUEST);
+            }
             if (userService.validToken(token)) {
 
                 userService.profileUpdate(userDto, token, files);
@@ -237,12 +328,44 @@ public class UserController {
                         .build();
                 return new ResponseEntity<>(payload, HttpStatus.OK);
             } else {
-                return new ResponseEntity<>("토큰이 만료 되었습니다.", HttpStatus.EXPECTATION_FAILED);
+                return new ResponseEntity<>("토큰이 만료 되었습니다.", HttpStatus.UNAUTHORIZED);
             }
         } catch (Exception e) {
             e.printStackTrace();
             Payload payload = Payload.builder()
                     .message("프로필 수정에 실패하였습니다.")
+                    .isSuccess(false)
+                    .httpStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .build();
+            return new ResponseEntity<>(payload, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    //회원 학과 전체 조회
+    @GetMapping(value = "/list/department")
+    public ResponseEntity listDepartment(){
+        try {
+               List<UserDepartmentDto> List
+                       = userService.listDepartment();
+
+                Payload payload = Payload.builder()
+                        .message("전체 학과 조회에 성공하였습니다.")
+                        .isSuccess(true)
+                        .httpStatus(HttpStatus.OK)
+                        .build();
+
+                UserDepartmentListDto userDepartmentListDto
+                        = UserDepartmentListDto.builder()
+                        .payload(payload)
+                        .userDepartmentDtoList(List)
+                        .build();
+
+                return new ResponseEntity<>(userDepartmentListDto, HttpStatus.OK);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            Payload payload = Payload.builder()
+                    .message("전체 학과 조회에 실패하였습니다.")
                     .isSuccess(false)
                     .httpStatus(HttpStatus.INTERNAL_SERVER_ERROR)
                     .build();

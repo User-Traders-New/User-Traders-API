@@ -14,6 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -64,6 +65,10 @@ public class BoardController {
     public ResponseEntity listAllInfinite(@RequestParam(value = "limit", defaultValue = "1") Integer limit) {
         // 여기서 요청 인자(RequestParam) limit는 page를 말한다.
         try {
+            if (limit == null) {
+                return new ResponseEntity<>("요청값에 limit값이 존재 하지 않습니다..", HttpStatus.BAD_REQUEST);
+            }
+
             List<BoardDto> List = boardService.listAllInfinite(limit);
 
             Payload payload = Payload.builder()
@@ -94,6 +99,9 @@ public class BoardController {
     @GetMapping(value = "/list/detail/{id}")
     public ResponseEntity listDetail(@PathVariable("id") Integer id) {
         try {
+            if (id == null) {
+                return new ResponseEntity<>("요청값에 게시물 id값이 존재하지 않습니다.", HttpStatus.BAD_REQUEST);
+            }
             Payload payload = Payload.builder()
                     .message("해당 페이지 게시물 조회에 성공하였습니다.")
                     .isSuccess(true)
@@ -151,7 +159,12 @@ public class BoardController {
     public ResponseEntity searchCategory(@RequestParam("categoryId") Integer categoryId
             , @RequestParam("subCategoryId") Integer subCategoryId
     ) {
-
+        if (categoryId == null) {
+            return new ResponseEntity<>("요청값에 categoryId가 없습니다.", HttpStatus.BAD_REQUEST);
+        }
+        if (subCategoryId == null) {
+            return new ResponseEntity<>("요청값에 subCategoryId가 없습니다.", HttpStatus.BAD_REQUEST);
+        }
         try {
             List<BoardDto> List =
                     boardService.searchCategory(categoryId, subCategoryId);
@@ -184,6 +197,9 @@ public class BoardController {
     public ResponseEntity listMyBoards(@RequestHeader("token") String token,
                                        @AuthenticationPrincipal UserEntity userEntity) {
         try {
+            if (token == null) {
+                return new ResponseEntity<>("요청값에 토큰값이 없습니다.", HttpStatus.BAD_REQUEST);
+            }
             if (userService.validToken(token)) {
                 List<BoardDto> List = boardService.listMyBoards(userEntity);
 
@@ -200,7 +216,7 @@ public class BoardController {
 
                 return new ResponseEntity<>(boardListDto, HttpStatus.OK);
             } else {
-                return new ResponseEntity<>("토큰이 만료 되었습니다.", HttpStatus.EXPECTATION_FAILED);
+                return new ResponseEntity<>("토큰이 만료 되었습니다.", HttpStatus.UNAUTHORIZED);
             }
 
         } catch (Exception e) {
@@ -220,6 +236,13 @@ public class BoardController {
             @RequestHeader("token") String token,
             @RequestParam(value = "userId") Integer userId) {
         try {
+
+            if (userId == null) {
+                return new ResponseEntity<>("요청값에 해당 userId가 없습니다.", HttpStatus.BAD_REQUEST);
+            }
+            if (token == null) {
+                return new ResponseEntity<>("요청값에 토큰값이 없습니다.", HttpStatus.BAD_REQUEST);
+            }
             if (userService.validToken(token)) {
                 List<BoardDto> List = boardService.findAllByUserId(userId);
 
@@ -236,7 +259,7 @@ public class BoardController {
 
                 return new ResponseEntity<>(boardListDto, HttpStatus.OK);
             } else {
-                return new ResponseEntity<>("토큰이 만료 되었습니다.", HttpStatus.EXPECTATION_FAILED);
+                return new ResponseEntity<>("토큰이 만료 되었습니다.", HttpStatus.UNAUTHORIZED);
             }
 
         } catch (Exception e) {
@@ -250,6 +273,7 @@ public class BoardController {
         }
 
     }
+
     //대분류 카테고리 조회
     @GetMapping(value = "/list/category")
     public ResponseEntity listSubCategoryId() {
@@ -286,7 +310,9 @@ public class BoardController {
             @RequestParam("subCategoryId") Integer subCategoryId
     ) {
         try {
-
+            if (subCategoryId == null) {
+                return new ResponseEntity<>("요청값에 subCategoryId가 없습니다.", HttpStatus.BAD_REQUEST);
+            }
             List<BoardCategoryDto> List = boardService.listCategoryId(subCategoryId);
 
             Payload payload = Payload.builder()
@@ -312,22 +338,118 @@ public class BoardController {
         }
     }
 
+    //게시물 저장 , 등록
+    //@RequestBody :HTTP 요청 몸체를 자바 객체로 변환
+    //하지만!! 여기서는 요청 body가 formdata 이기 때문에 @RequsetBody를 사용하지않는다.
+    @PostMapping(value = "/register")
+    public ResponseEntity register(BoardDto boardDto
+            , List<MultipartFile> files
+            , @RequestHeader("token") String token
+            , @AuthenticationPrincipal UserEntity user) {
+        try {
+            if (boardDto.getTitle() == null) {
+                return new ResponseEntity<>("게시물 제목을 입력해주세요.", HttpStatus.BAD_REQUEST);
+            }
+            if (boardDto.getContent() == null) {
+                return new ResponseEntity<>("게시물 내용을 입력해주세요.", HttpStatus.BAD_REQUEST);
+            }
+            if (boardDto.getPrice() == null) {
+                return new ResponseEntity<>("게시물 가격을 입력해주세요.", HttpStatus.BAD_REQUEST);
+            }
+            if (boardDto.getCategoryId() == null) {
+                return new ResponseEntity<>("요청값에 categoryId를 입력해주세요.", HttpStatus.BAD_REQUEST);
+            }
+            if (boardDto.getGrade() == null) {
+                return new ResponseEntity<>("게시물 상품 등급을 입력해주세요.", HttpStatus.BAD_REQUEST);
+            }
+            if (token == null) {
+                return new ResponseEntity<>("요청값에 토큰값이 없습니다.", HttpStatus.BAD_REQUEST);
+            }
+            if (files.get(0).getSize() == 0) {
+                return new ResponseEntity<>("파일이 없습니다.", HttpStatus.BAD_REQUEST);
+            }
+            if (userService.validToken(token)) {
+                boardService.register(boardDto, files, user);
 
-//
-//    @PostMapping(value = "/register") // 한 게시물 저장
-//    public ResponseEntity register(BoardDto boardDto, List<MultipartFile> files, @AuthenticationPrincipal UserEntity user) {//@RequestBody :HTTP 요청 몸체를 자바 객체로 변환
-//        boardService.save(boardDto, files, user);
-//        return ResponseEntity.ok(boardDto.getId() + "번 게시물이 저장되었습니다.");
-//    }
-//
-//    @PatchMapping(value = "/list/{id}") // 한 게시물의 id 를 받아서 그 안에 들어 있는 게시물 정보 수정.
-//    public ResponseEntity update(@RequestBody @Validated BoardDto boardDto,
-//                                 @PathVariable("id") Integer id) {
-//        boardDto.setId(id);
-//        boardService.updateById(boardDto, id);
-//        return ResponseEntity.ok(id + "번 게시물이 수정되었습니다.");
-//
-//    }
+                Payload payload = Payload.builder()
+                        .message("게시물 등록에 성공하였습니다.")
+                        .isSuccess(true)
+                        .httpStatus(HttpStatus.OK)
+                        .build();
+
+                return new ResponseEntity<>(payload, HttpStatus.OK);
+            } else {
+                return new ResponseEntity<>("토큰이 만료 되었습니다.", HttpStatus.UNAUTHORIZED);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            Payload payload = Payload.builder()
+                    .message("게시물 등록에 실패하였습니다.")
+                    .isSuccess(false)
+                    .httpStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .build();
+            return new ResponseEntity<>(payload, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+
+    }
+
+    // 한 게시물 수정
+    @PatchMapping(value = "/update") // 한 게시물의 id 를 받아서 그 안에 들어 있는 게시물 정보 수정.
+    public ResponseEntity update(
+            BoardDto boardDto
+            , List<MultipartFile> files
+            , @RequestHeader("token") String token
+            , @AuthenticationPrincipal UserEntity user
+            ) {
+
+        try {
+            if (boardDto.getTitle() == null) {
+                return new ResponseEntity<>("게시물 제목을 입력해주세요.", HttpStatus.BAD_REQUEST);
+            }
+            if (boardDto.getContent() == null) {
+                return new ResponseEntity<>("게시물 내용을 입력해주세요.", HttpStatus.BAD_REQUEST);
+            }
+            if (boardDto.getPrice() == null) {
+                return new ResponseEntity<>("게시물 가격을 입력해주세요.", HttpStatus.BAD_REQUEST);
+            }
+            if (boardDto.getCategoryId() == null) {
+                return new ResponseEntity<>("요청값에 categoryId를 입력해주세요.", HttpStatus.BAD_REQUEST);
+            }
+            if (boardDto.getGrade() == null) {
+                return new ResponseEntity<>("게시물 상품 등급을 입력해주세요.", HttpStatus.BAD_REQUEST);
+            }
+            if (token == null) {
+                return new ResponseEntity<>("요청값에 토큰값이 없습니다.", HttpStatus.BAD_REQUEST);
+            }
+            if (files.get(0).getSize() == 0) {
+                return new ResponseEntity<>("파일이 없습니다.", HttpStatus.BAD_REQUEST);
+            }
+
+            if (userService.validToken(token)) {
+                boardService.update(files, boardDto, user);
+
+                Payload payload = Payload.builder()
+                        .message(boardDto.getId() + "번 게시물이 수정에 성공하였습니다.")
+                        .isSuccess(true)
+                        .httpStatus(HttpStatus.OK)
+                        .build();
+
+                return new ResponseEntity<>(payload, HttpStatus.OK);
+            } else {
+                return new ResponseEntity<>("토큰이 만료 되었습니다.", HttpStatus.UNAUTHORIZED);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            Payload payload = Payload.builder()
+                    .message(boardDto.getId() + "번 게시물이 수정에 실패하였습니다.")
+                    .isSuccess(false)
+                    .httpStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .build();
+            return new ResponseEntity<>(payload, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 
     // 한 게시물 삭제(예정)
     @DeleteMapping(value = "/list/{id}")
