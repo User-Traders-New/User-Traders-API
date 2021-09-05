@@ -18,4 +18,5 @@ public interface BoardRepository extends JpaRepository<BoardEntity,Integer>  {
     List<BoardEntity> selectAll(Integer categoryId,Integer subCategoryId);
 
     List<BoardEntity> findAllByUserId_Id(Integer userId);
+
 }

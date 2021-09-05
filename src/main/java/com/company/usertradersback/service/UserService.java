@@ -2,11 +2,13 @@ package com.company.usertradersback.service;
 
 import com.company.usertradersback.config.jwt.JwtTokenProvider;
 import com.company.usertradersback.config.s3.AwsS3;
+import com.company.usertradersback.dto.UserDepartmentDto;
 import com.company.usertradersback.dto.UserDto;
 import com.company.usertradersback.entity.UserDepartmentEntity;
 import com.company.usertradersback.entity.UserEntity;
 import com.company.usertradersback.entity.UserIsLoginedEntity;
 import com.company.usertradersback.exception.user.ApiIllegalArgumentException;
+import com.company.usertradersback.repository.UserDepartmentRepository;
 import com.company.usertradersback.repository.UserIsLoginedRepository;
 import com.company.usertradersback.repository.UserRepository;
 import org.springframework.context.annotation.Lazy;
@@ -21,6 +23,7 @@ import javax.transaction.Transactional;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 
 @Service
@@ -34,18 +37,21 @@ public class UserService implements UserDetailsService {
     private final JwtTokenProvider jwtTokenProvider;
     private final PasswordEncoder passwordEncoder;
     private final AwsS3 awsS3;
+    private final UserDepartmentRepository userDepartmentRepository;
 
     public UserService(@Lazy UserRepository userRepository,
                        @Lazy UserIsLoginedRepository userIsLoginedRepository,
                        @Lazy JwtTokenProvider jwtTokenProvider,
                        @Lazy PasswordEncoder passwordEncoder,
-                       @Lazy AwsS3 awsS3
+                       @Lazy AwsS3 awsS3,
+                       @Lazy UserDepartmentRepository userDepartmentRepository
     ) {
         this.userRepository = userRepository;
         this.userIsLoginedRepository = userIsLoginedRepository;
         this.jwtTokenProvider = jwtTokenProvider;
         this.passwordEncoder = passwordEncoder;
         this.awsS3 = awsS3;
+        this.userDepartmentRepository = userDepartmentRepository;
     }
 
 //     Spring Security 필수 메소드 구현
@@ -215,11 +221,8 @@ public class UserService implements UserDetailsService {
                 == "https://usertradersbucket.s3.ap-northeast-2.amazonaws.com/basic/profile_img.gif" ||
         Cur_imagePath == null)
         ){
-            for (int i=0; i<files.size(); i++){
                 del_imagePath_key = Cur_imagePath.split("/")[3]+"/"+Cur_imagePath.split("/")[4];
                 awsS3.delete(del_imagePath_key);
-            }
-
         }
 
         //aws에 files에 담겨져온 이미지 파일을 업로드
@@ -264,11 +267,27 @@ public class UserService implements UserDetailsService {
         return userEntityWrapper.get().getId();
     }
 
+    // 전체 학과 조회
+    @Transactional
+    public List<UserDepartmentDto> listDepartment() {
+        List<UserDepartmentEntity> departmentEntityList = userDepartmentRepository.findAll();
+        List<UserDepartmentDto> results = departmentEntityList.stream().map(departmentEntity -> {
+            UserDepartmentDto departmentDto = UserDepartmentDto.builder()
+                    .id(departmentEntity.getId())
+                    .name(departmentEntity.getName())
+                    .build();
+            return departmentDto;
+        }).collect(Collectors.toList());
+        return results;
+    }
+
+
     //회원 한명 정보 삭제
     @Transactional
     public void deleteById(Integer id) {
         userRepository.deleteById(id);
     }
+
 
 
 }
