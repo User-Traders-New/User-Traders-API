@@ -1,16 +1,11 @@
 package com.company.usertradersback.service;
 
 import com.company.usertradersback.config.s3.AwsS3;
-import com.company.usertradersback.dto.BoardCategoryDto;
-import com.company.usertradersback.dto.BoardDto;
-import com.company.usertradersback.dto.BoardSubCategoryDto;
+import com.company.usertradersback.dto.*;
 import com.company.usertradersback.entity.*;
-import com.company.usertradersback.exception.user.ApiIllegalArgumentException;
-import com.company.usertradersback.exception.user.ApiNullPointerException;
-import com.company.usertradersback.repository.BoardCategoryRepository;
-import com.company.usertradersback.repository.BoardImageRepository;
-import com.company.usertradersback.repository.BoardRepository;
-import com.company.usertradersback.repository.BoardSubCategoryRepository;
+import com.company.usertradersback.exception.ApiIllegalArgumentException;
+import com.company.usertradersback.exception.ApiNullPointerException;
+import com.company.usertradersback.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -40,6 +35,9 @@ public class BoardService {
 
     @Autowired
     private BoardImageRepository boardImageRepository;
+
+    @Autowired
+    private BoardLikeUserRepository boardLikeUserRepository;
 
     @Autowired
     private AwsS3 awsS3;
@@ -345,4 +343,39 @@ public class BoardService {
         boardRepository.deleteById(id);
     }
 
+    public boolean like(UserEntity user, BoardLikeUserDto boardLikeUserDto) {
+        if(boardLikeUserRepository.exist(user.getId(),boardLikeUserDto.getBoardId().getId())>=1){
+            Integer a = boardLikeUserRepository.deleteById(user.getId(),boardLikeUserDto.getBoardId().getId());
+            if(a > 0){
+                return true;
+            }else throw new ApiIllegalArgumentException("좋아요 취소 실패!!");
+
+        }else {
+            Integer a = boardLikeUserRepository.save(
+                    BoardLikeUserEntity.builder()
+                            .boardId(boardLikeUserDto.getBoardId())
+                            .userId(user)
+                            .createtAt(LocalDateTime.now())
+                            .build()
+            ).getId();
+
+            if(a > 0){
+                return false;
+            }else throw new ApiIllegalArgumentException("좋아요 실패!!");
+        }
+    }
+
+
+    public List<BoardLikeUserDto> likeList(UserEntity user) {
+        List<BoardLikeUserEntity> boardEntityList =
+        boardLikeUserRepository. findAllByUserId_Id(user.getId());
+        List<BoardLikeUserDto> results = boardEntityList.stream().map(boardLikeUserEntity -> {
+            BoardLikeUserDto boardLikeUserDto = BoardLikeUserDto.builder()
+                    .id(boardLikeUserEntity.getId())
+                    .boardId(boardLikeUserEntity.getBoardId())
+                    .build();
+            return boardLikeUserDto;
+        }).collect(Collectors.toList());
+        return results;
+    }
 }

@@ -7,7 +7,7 @@ import com.company.usertradersback.dto.UserDto;
 import com.company.usertradersback.entity.UserDepartmentEntity;
 import com.company.usertradersback.entity.UserEntity;
 import com.company.usertradersback.entity.UserIsLoginedEntity;
-import com.company.usertradersback.exception.user.ApiIllegalArgumentException;
+import com.company.usertradersback.exception.ApiIllegalArgumentException;
 import com.company.usertradersback.repository.UserDepartmentRepository;
 import com.company.usertradersback.repository.UserIsLoginedRepository;
 import com.company.usertradersback.repository.UserRepository;
@@ -116,7 +116,7 @@ public class UserService implements UserDetailsService {
                 .password(passwordEncoder.encode(userDto.getPassword()))
                 .userName(userDto.getUserName())
                 .nickname(userDto.getNickname())
-                .departmentId(userDto.getDepartmentId())
+                  .departmentId(userDto.getDepartmentId())
                 .studentId(userDto.getStudentId())
                 .gender(userDto.getGender())
                 .loginType(userDto.getLoginType())

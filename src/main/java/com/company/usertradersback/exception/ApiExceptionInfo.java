@@ -1,4 +1,4 @@
-package com.company.usertradersback.exception.user;
+package com.company.usertradersback.exception;
 
 import lombok.Getter;
 import lombok.Setter;
