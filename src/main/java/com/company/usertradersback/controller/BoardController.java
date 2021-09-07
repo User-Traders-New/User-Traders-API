@@ -155,7 +155,7 @@ public class BoardController {
     }
 
     //대분류 카테고리Id와 서브 카테고리 Id를 통한 게시물 조회(검색)
-    @GetMapping(value = "/category/search")
+    @GetMapping(value = "/search/category")
     public ResponseEntity searchCategory(@RequestParam("categoryId") Integer categoryId
             , @RequestParam("subCategoryId") Integer subCategoryId
     ) {
@@ -401,7 +401,7 @@ public class BoardController {
             , List<MultipartFile> files
             , @RequestHeader("token") String token
             , @AuthenticationPrincipal UserEntity user
-            ) {
+    ) {
 
         try {
             if (boardDto.getTitle() == null) {
@@ -459,5 +459,89 @@ public class BoardController {
         return ResponseEntity.ok(id + "번 게시물이 삭제되었습니다.");
     }
 
+    // 게시물 - 좋아요(장바구니) -유저
+    @PostMapping(value = "/like")
+    public ResponseEntity like(
+            @RequestBody BoardLikeUserDto boardLikeUserDto
+            , @RequestHeader("token") String token
+            , @AuthenticationPrincipal UserEntity user
+    ) {
+        try {
+            if (boardLikeUserDto.getBoardId() == null) {
+                return new ResponseEntity<>("요청값에 해당 게시물 boardId가 없습니다.", HttpStatus.BAD_REQUEST);
+            }
+            if (token == null) {
+                return new ResponseEntity<>("요청값에 토큰값이 없습니다.", HttpStatus.BAD_REQUEST);
+            }
+            if (userService.validToken(token)) {
+                boolean valid = boardService.like(user, boardLikeUserDto);
+
+                if (valid) {
+                    Payload payload = Payload.builder()
+                            .message(boardLikeUserDto.getBoardId().getId() + "번 게시물을 장바구니에 담기 취소에 성공하였습니다.")
+                            .isSuccess(true)
+                            .httpStatus(HttpStatus.OK)
+                            .build();
+
+                    return new ResponseEntity<>(payload, HttpStatus.OK);
+                } else {
+                    Payload payload = Payload.builder()
+                            .message(boardLikeUserDto.getBoardId().getId() + "번 게시물을 장바구니에 담기에 성공하였습니다.")
+                            .isSuccess(true)
+                            .httpStatus(HttpStatus.OK)
+                            .build();
+                    return new ResponseEntity<>(payload, HttpStatus.OK);
+                }
+            } else {
+                return new ResponseEntity<>("토큰이 만료 되었습니다.", HttpStatus.UNAUTHORIZED);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            Payload payload = Payload.builder()
+                    .message(boardLikeUserDto.getBoardId().getId() + "번 게시물을 장바구니에 담기에  실패하였습니다.")
+                    .isSuccess(false)
+                    .httpStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .build();
+            return new ResponseEntity<>(payload, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping(value = "/like/list")
+    public ResponseEntity likeList(
+            @RequestHeader("token") String token
+            , @AuthenticationPrincipal UserEntity user
+    ) {
+        try {
+            if (token == null) {
+                return new ResponseEntity<>("요청값에 토큰값이 없습니다.", HttpStatus.BAD_REQUEST);
+            }
+            if (userService.validToken(token)) {
+                    List<BoardLikeUserDto> List = boardService.likeList(user);
+
+                    Payload payload = Payload.builder()
+                            .message("나의 장바구니 조회에 성공하였습니다.")
+                            .isSuccess(true)
+                            .httpStatus(HttpStatus.OK)
+                            .build();
+                    BoardLikeListDto boardLikeListDto = BoardLikeListDto.builder()
+                            .payload(payload)
+                            .boardLikeUserDtoList(List)
+                            .build();
+                    return new ResponseEntity<>(boardLikeListDto, HttpStatus.OK);
+            } else {
+                return new ResponseEntity<>("토큰이 만료 되었습니다.", HttpStatus.UNAUTHORIZED);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            Payload payload = Payload.builder()
+                    .message("나의 장바구니 조회에 실패하였습니다.")
+                    .isSuccess(false)
+                    .httpStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .build();
+            return new ResponseEntity<>(payload, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 
 }

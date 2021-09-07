@@ -8,9 +8,13 @@ import com.company.usertradersback.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.util.List;
 import java.util.Map;
 
@@ -92,12 +96,15 @@ public class UserController {
     // 들어있는 jwt를 지운다. 그리고 UserIsLogined 날짜 및 상태값 수정하여 DB 저장
     @PostMapping(value = "/logout")
     public ResponseEntity logout(@RequestHeader("token") String token
+                                 , HttpServletRequest request, HttpServletResponse response
     ) {
         try {
             if(token == null){
                 return new ResponseEntity<>("요청값에 토큰값이 없습니다.", HttpStatus.BAD_REQUEST);
             }
             userService.logout(token);
+            new SecurityContextLogoutHandler()
+                    .logout(request, response, SecurityContextHolder.getContext().getAuthentication());
             Payload payload = Payload.builder()
                     .message("로그아웃에 성공하였습니다.")
                     .isSuccess(true)
