@@ -2,12 +2,14 @@ package com.company.usertradersback.controller;
 
 
 import com.company.usertradersback.dto.*;
+import com.company.usertradersback.entity.UserEntity;
 import com.company.usertradersback.env.Url;
 import com.company.usertradersback.payload.Payload;
 import com.company.usertradersback.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.web.bind.annotation.*;
@@ -386,4 +388,48 @@ public class UserController {
         userService.deleteById(id);
         return ResponseEntity.ok("회원이 탈퇴 되었습니다.");
     }
+
+    //회원 점수 부여,저장
+    @PostMapping(value = "/grades")
+    public ResponseEntity grades(
+            @RequestBody UserGradesDto userGradesDto
+            , @RequestHeader("token") String token
+            , @AuthenticationPrincipal UserEntity user
+    ){
+        try {
+            if(userGradesDto.getUserRecvId() == null){
+                return new ResponseEntity<>("요청값에 userRecvId(받는 회원)객체가 없습니다.", HttpStatus.BAD_REQUEST);
+
+            }
+            if(userGradesDto.getGrade() == null){
+                return new ResponseEntity<>("요청값에 grade가 없습니다.", HttpStatus.BAD_REQUEST);
+            }
+            if (token == null) {
+                return new ResponseEntity<>("요청값에 토큰값이 없습니다.", HttpStatus.BAD_REQUEST);
+            }
+            if (userService.validToken(token)) {
+
+                    Payload payload = Payload.builder()
+                            .message("해당 게시물 유저에게 점수 부여에 성공하였습니다.")
+                            .isSuccess(true)
+                            .httpStatus(HttpStatus.OK)
+                            .build();
+
+                    return new ResponseEntity<>(payload, HttpStatus.OK);
+            } else {
+                return new ResponseEntity<>("토큰이 만료 되었습니다.", HttpStatus.UNAUTHORIZED);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            Payload payload = Payload.builder()
+                    .message("해당 게시물 유저에게 점수 부여에 실패하였습니다.")
+                    .isSuccess(false)
+                    .httpStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .build();
+            return new ResponseEntity<>(payload, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
 }

@@ -468,7 +468,7 @@ public class BoardController {
     ) {
         try {
             if (boardLikeUserDto.getBoardId() == null) {
-                return new ResponseEntity<>("요청값에 해당 게시물 boardId가 없습니다.", HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>("요청값에 해당 게시물 boardId 객체가 없습니다.", HttpStatus.BAD_REQUEST);
             }
             if (token == null) {
                 return new ResponseEntity<>("요청값에 토큰값이 없습니다.", HttpStatus.BAD_REQUEST);
@@ -507,6 +507,7 @@ public class BoardController {
         }
     }
 
+    //내가 좋아하는 게시물 리스트
     @GetMapping(value = "/like/list")
     public ResponseEntity likeList(
             @RequestHeader("token") String token
@@ -517,18 +518,18 @@ public class BoardController {
                 return new ResponseEntity<>("요청값에 토큰값이 없습니다.", HttpStatus.BAD_REQUEST);
             }
             if (userService.validToken(token)) {
-                    List<BoardLikeUserDto> List = boardService.likeList(user);
+                List<BoardLikeUserDto> List = boardService.likeList(user);
 
-                    Payload payload = Payload.builder()
-                            .message("나의 장바구니 조회에 성공하였습니다.")
-                            .isSuccess(true)
-                            .httpStatus(HttpStatus.OK)
-                            .build();
-                    BoardLikeListDto boardLikeListDto = BoardLikeListDto.builder()
-                            .payload(payload)
-                            .boardLikeUserDtoList(List)
-                            .build();
-                    return new ResponseEntity<>(boardLikeListDto, HttpStatus.OK);
+                Payload payload = Payload.builder()
+                        .message("나의 장바구니 조회에 성공하였습니다.")
+                        .isSuccess(true)
+                        .httpStatus(HttpStatus.OK)
+                        .build();
+                BoardLikeListDto boardLikeListDto = BoardLikeListDto.builder()
+                        .payload(payload)
+                        .boardLikeUserDtoList(List)
+                        .build();
+                return new ResponseEntity<>(boardLikeListDto, HttpStatus.OK);
             } else {
                 return new ResponseEntity<>("토큰이 만료 되었습니다.", HttpStatus.UNAUTHORIZED);
             }
@@ -537,6 +538,238 @@ public class BoardController {
             e.printStackTrace();
             Payload payload = Payload.builder()
                     .message("나의 장바구니 조회에 실패하였습니다.")
+                    .isSuccess(false)
+                    .httpStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .build();
+            return new ResponseEntity<>(payload, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    //게시물 신고
+    @PostMapping(value = "/declaration")
+    public ResponseEntity declaration(
+            @RequestBody BoardDeclarationDto boardDeclarationDto
+            , @RequestHeader("token") String token
+            , @AuthenticationPrincipal UserEntity user
+    ) {
+        try {
+            if(boardDeclarationDto.getBoardId() == null){
+                    return new ResponseEntity<>("요청값에 해당 게시물 boardId 객체가 없습니다.", HttpStatus.BAD_REQUEST);
+            }
+            if(boardDeclarationDto.getContent() == null){
+                return new ResponseEntity<>("요청값에 해당 게시물 content(신고내용)가 없습니다.", HttpStatus.BAD_REQUEST);
+            }
+            if (token == null) {
+                return new ResponseEntity<>("요청값에 토큰값이 없습니다.", HttpStatus.BAD_REQUEST);
+            }
+            if (userService.validToken(token)) {
+                if(boardService.declarationVaild(user.getId(),boardDeclarationDto.getBoardId().getId())>=1)
+                {
+                    Payload payload = Payload.builder()
+                            .message("해당 게시물은 이미 신고하였습니다.")
+                            .isSuccess(true)
+                            .httpStatus(HttpStatus.OK)
+                            .build();
+                    return new ResponseEntity<>(payload, HttpStatus.OK);
+                }else
+                {
+                    boardService.declaration(user,boardDeclarationDto);
+                    Payload payload = Payload.builder()
+                            .message("해당 게시물 신고 저장에 성공하였습니다.")
+                            .isSuccess(true)
+                            .httpStatus(HttpStatus.OK)
+                            .build();
+                    return new ResponseEntity<>(payload, HttpStatus.OK);
+                }
+            } else {
+                return new ResponseEntity<>("토큰이 만료 되었습니다.", HttpStatus.UNAUTHORIZED);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            Payload payload = Payload.builder()
+                    .message("해당 게시물 신고 저장에 실패하였습니다.")
+                    .isSuccess(false)
+                    .httpStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .build();
+            return new ResponseEntity<>(payload, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    //댓글 저장
+    @PostMapping(value = "/parent/comment")
+    public ResponseEntity pComment(
+            @RequestBody BoardParentCommentDto boardParentCommentDto
+            , @RequestHeader("token") String token
+            , @AuthenticationPrincipal UserEntity user
+    ){
+        try {
+            if(boardParentCommentDto.getBoardId() == null){
+                return new ResponseEntity<>("요청값에 해당 게시물 boardId 객체가 없습니다.", HttpStatus.BAD_REQUEST);
+            }
+            if(boardParentCommentDto.getComment() == null){
+                return new ResponseEntity<>("요청값에 댓글 comment가 없습니다.", HttpStatus.BAD_REQUEST);
+            }
+            if (token == null) {
+                return new ResponseEntity<>("요청값에 토큰값이 없습니다.", HttpStatus.BAD_REQUEST);
+            }
+            if (userService.validToken(token)) {
+
+                boardService.pComment(user,boardParentCommentDto);
+                Payload payload = Payload.builder()
+                        .message("해당 게시물 댓글 저장에 성공하였습니다.")
+                        .isSuccess(true)
+                        .httpStatus(HttpStatus.OK)
+                        .build();
+
+                return new ResponseEntity<>(payload, HttpStatus.OK);
+            } else {
+                return new ResponseEntity<>("토큰이 만료 되었습니다.", HttpStatus.UNAUTHORIZED);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            Payload payload = Payload.builder()
+                    .message("해당 게시물 댓글 저장에 실패하였습니다.")
+                    .isSuccess(false)
+                    .httpStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .build();
+            return new ResponseEntity<>(payload, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    //댓글 삭제 -> 댓글 삭제시 대댓글도 한번에 삭제됩니다.
+    @DeleteMapping(value = "/parent/comment")
+    public ResponseEntity pCommentDelete(
+            @RequestParam("pCommentId") Integer id
+            , @RequestHeader("token") String token
+            , @AuthenticationPrincipal UserEntity user
+    ){
+        try {
+            if(id == null){
+                return new ResponseEntity<>("요청값에 해당 댓글 pCommentId가 없습니다.", HttpStatus.BAD_REQUEST);
+            }
+            if (token == null) {
+                return new ResponseEntity<>("요청값에 토큰값이 없습니다.", HttpStatus.BAD_REQUEST);
+            }
+            if (userService.validToken(token)) {
+                if(boardService.pCommentDeleteValid(user.getId(),id)>=1){
+                    boardService.pCommentDelete(user,id);
+                    Payload payload = Payload.builder()
+                            .message("해당 게시물 댓글 삭제에 성공하였습니다.")
+                            .isSuccess(true)
+                            .httpStatus(HttpStatus.OK)
+                            .build();
+
+                    return new ResponseEntity<>(payload, HttpStatus.OK);
+                }else {
+                    Payload payload = Payload.builder()
+                            .message("자기자신의 댓글만 삭제 할 수 있습니다.")
+                            .isSuccess(true)
+                            .httpStatus(HttpStatus.OK)
+                            .build();
+
+                    return new ResponseEntity<>(payload, HttpStatus.OK);
+                }
+            } else {
+                return new ResponseEntity<>("토큰이 만료 되었습니다.", HttpStatus.UNAUTHORIZED);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            Payload payload = Payload.builder()
+                    .message("해당 게시물 댓글 삭제에 실패하였습니다.")
+                    .isSuccess(false)
+                    .httpStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .build();
+            return new ResponseEntity<>(payload, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    //대댓글 저장
+    @PostMapping(value = "/child/comment")
+    public ResponseEntity cComment(
+            @RequestBody BoardChildCommentDto boardChildCommentDto
+            , @RequestHeader("token") String token
+            , @AuthenticationPrincipal UserEntity user
+    ){
+        try {
+            if(boardChildCommentDto.getPcommentId().getId()==null){
+                    return new ResponseEntity<>("요청값에 해당 댓글 pCommentId 객체가 없습니다.", HttpStatus.BAD_REQUEST);
+            }
+            if(boardChildCommentDto.getComment() == null){
+                return new ResponseEntity<>("요청값에 댓글 comment가 없습니다.", HttpStatus.BAD_REQUEST);
+            }
+            if (token == null) {
+                return new ResponseEntity<>("요청값에 토큰값이 없습니다.", HttpStatus.BAD_REQUEST);
+            }
+            if (userService.validToken(token)) {
+
+                boardService.cComment(user,boardChildCommentDto);
+                Payload payload = Payload.builder()
+                        .message(boardChildCommentDto.getPcommentId().getId()+"번 댓글에 " +
+                                "대댓글 저장을 성공하였습니다.")
+                        .isSuccess(true)
+                        .httpStatus(HttpStatus.OK)
+                        .build();
+
+                return new ResponseEntity<>(payload, HttpStatus.OK);
+            } else {
+                return new ResponseEntity<>("토큰이 만료 되었습니다.", HttpStatus.UNAUTHORIZED);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            Payload payload = Payload.builder()
+                    .message(boardChildCommentDto.getPcommentId().getId()+"번 댓글에 " +
+                            "대댓글 저장을 실패하였습니다.")
+                    .isSuccess(false)
+                    .httpStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .build();
+            return new ResponseEntity<>(payload, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    //대댓글 삭제
+    @DeleteMapping(value = "/child/comment")
+    public ResponseEntity cCommentDelete(
+            @RequestParam("cCommentId") Integer id
+            , @RequestHeader("token") String token
+            , @AuthenticationPrincipal UserEntity user
+    ){
+        try {
+            if(id == null){
+                return new ResponseEntity<>("요청값에 해당 댓글 cCommentId가 없습니다.", HttpStatus.BAD_REQUEST);
+            }
+            if (token == null) {
+                return new ResponseEntity<>("요청값에 토큰값이 없습니다.", HttpStatus.BAD_REQUEST);
+            }
+            if (userService.validToken(token)) {
+                if(boardService.cCommentDeleteValid(user.getId(),id)>=1){
+                    boardService.cCommentDelete(user,id);
+                    Payload payload = Payload.builder()
+                            .message("해당 게시물 댓글 삭제에 성공하였습니다.")
+                            .isSuccess(true)
+                            .httpStatus(HttpStatus.OK)
+                            .build();
+
+                    return new ResponseEntity<>(payload, HttpStatus.OK);
+                }else {
+                    Payload payload = Payload.builder()
+                            .message("자기자신의 댓글만 삭제 할 수 있습니다.")
+                            .isSuccess(true)
+                            .httpStatus(HttpStatus.OK)
+                            .build();
+
+                    return new ResponseEntity<>(payload, HttpStatus.OK);
+                }
+            } else {
+                return new ResponseEntity<>("토큰이 만료 되었습니다.", HttpStatus.UNAUTHORIZED);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            Payload payload = Payload.builder()
+                    .message("해당 게시물 댓글 삭제에 실패하였습니다.")
                     .isSuccess(false)
                     .httpStatus(HttpStatus.INTERNAL_SERVER_ERROR)
                     .build();

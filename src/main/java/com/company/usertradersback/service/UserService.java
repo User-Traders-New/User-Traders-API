@@ -116,14 +116,14 @@ public class UserService implements UserDetailsService {
                 .password(passwordEncoder.encode(userDto.getPassword()))
                 .userName(userDto.getUserName())
                 .nickname(userDto.getNickname())
-                  .departmentId(userDto.getDepartmentId())
+                .departmentId(userDto.getDepartmentId())
                 .studentId(userDto.getStudentId())
                 .gender(userDto.getGender())
                 .loginType(userDto.getLoginType())
                 .imagePath("https://usertradersbucket.s3.ap-northeast-2.amazonaws.com/basic/profile_img.gif")
                 .createAt(LocalDateTime.now())
                 .modifiedAt(LocalDateTime.now())
-                .roles(Collections.singletonList("일반 회원"))
+                .roles(Collections.singletonList("일반회원"))
                 .build()).getId();
     }
 
@@ -288,6 +288,9 @@ public class UserService implements UserDetailsService {
         userRepository.deleteById(id);
     }
 
+    //회원 점수 부여, 저장
+
+    //해당 회원 총 점수 평균 값 조회
 
 
 }
