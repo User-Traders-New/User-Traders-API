@@ -40,6 +40,15 @@ public class BoardService {
     private BoardLikeUserRepository boardLikeUserRepository;
 
     @Autowired
+    private BoardDeclaraionRepository boardDeclaraionRepository;
+
+    @Autowired
+    private BoardParentCommentRepository boardParentCommentRepository;
+
+    @Autowired
+    private BoardChildCommenRepository boardChildCommenRepository;
+
+    @Autowired
     private AwsS3 awsS3;
 
 
@@ -164,7 +173,7 @@ public class BoardService {
         return results;
     }
 
-
+    //게시물 저장
     @Transactional
     public Integer register(BoardDto boardDto, List<MultipartFile> files, UserEntity user) { // 한 객체를 보드 테이블에 저장, 파일까지 저장
 
@@ -237,6 +246,7 @@ public class BoardService {
         return boardEntity.getId();
     }
 
+    //게시물 수정
     @Transactional
     public Integer update(List<MultipartFile> files, BoardDto boardDto,
                            UserEntity user) {
@@ -343,6 +353,8 @@ public class BoardService {
         boardRepository.deleteById(id);
     }
 
+    // 유저 - 좋아요 - 게시물
+    @Transactional
     public boolean like(UserEntity user, BoardLikeUserDto boardLikeUserDto) {
         if(boardLikeUserRepository.exist(user.getId(),boardLikeUserDto.getBoardId().getId())>=1){
             Integer a = boardLikeUserRepository.deleteById(user.getId(),boardLikeUserDto.getBoardId().getId());
@@ -364,8 +376,8 @@ public class BoardService {
             }else throw new ApiIllegalArgumentException("좋아요 실패!!");
         }
     }
-
-
+    @Transactional
+    //내가 좋아하는 게시물 리스트
     public List<BoardLikeUserDto> likeList(UserEntity user) {
         List<BoardLikeUserEntity> boardEntityList =
         boardLikeUserRepository. findAllByUserId_Id(user.getId());
@@ -378,4 +390,70 @@ public class BoardService {
         }).collect(Collectors.toList());
         return results;
     }
+    @Transactional
+    //해당 게시물 신고하기 , 저장
+    public Integer declaration(UserEntity user, BoardDeclarationDto boardDeclarationDto) {
+        return boardDeclaraionRepository.save(
+                BoardDeclarationEntity.builder()
+                        .boardId(boardDeclarationDto.getBoardId())
+                        .userId(user)
+                        .content(boardDeclarationDto.getContent())
+                        .otherContent(boardDeclarationDto.getOtherContent())
+                        .createAt(LocalDateTime.now())
+                        .build()
+        ).getId();
+    }
+    //해당 게시물 신고 중복 검사
+    public Integer declarationVaild(Integer userId, Integer boardId) {
+        return boardDeclaraionRepository.exist(userId, boardId);
+    }
+    @Transactional
+    // 댓글 저장
+    public Integer pComment(UserEntity user, BoardParentCommentDto boardParentCommentDto) {
+        return boardParentCommentRepository.save(
+                BoardParentCommentEntity.builder()
+                        .userId(user)
+                        .boardId(boardParentCommentDto.getBoardId())
+                        .comment(boardParentCommentDto.getComment())
+                        .createAt(LocalDateTime.now())
+                        .build()
+        ).getId();
+    }
+    @Transactional
+    //댓글삭제
+    public void pCommentDelete(UserEntity user, Integer id) {
+       boardParentCommentRepository.deleteById(user,id);
+    }
+
+    @Transactional
+    //해당 댓글이 내 댓글인지 검사,존재여부
+    public Integer pCommentDeleteValid(Integer userId,Integer id){
+       return boardParentCommentRepository.exist(userId,id);
+    }
+
+    @Transactional
+    // 대댓글 저장
+    public Integer cComment(UserEntity user, BoardChildCommentDto boardChildCommentDto) {
+        return boardChildCommenRepository.save(
+                BoardChildCommentEntity.builder()
+                        .userId(user)
+                        .pcommentId(boardChildCommentDto.getPcommentId())
+                        .comment(boardChildCommentDto.getComment())
+                        .createAt(LocalDateTime.now())
+                        .build()
+        ).getId();
+    }
+    @Transactional
+    //대댓글 삭제
+    public void cCommentDelete(UserEntity user, Integer id) {
+        boardChildCommenRepository.deleteById(user,id);
+    }
+
+    @Transactional
+    //해당 대댓글이 내 댓글인지 검사,존재여부
+    public Integer cCommentDeleteValid(Integer userId,Integer id){
+        return boardChildCommenRepository.exist(userId,id);
+    }
+
+
 }
