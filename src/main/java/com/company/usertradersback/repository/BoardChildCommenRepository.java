@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
 import javax.transaction.Transactional;
+import java.util.List;
 
 public interface BoardChildCommenRepository extends JpaRepository<BoardChildCommentEntity,Integer> {
     @Transactional
@@ -17,5 +18,9 @@ public interface BoardChildCommenRepository extends JpaRepository<BoardChildComm
     @Transactional
     @Query("select count(bcc.id) from BoardChildCommentEntity bcc where bcc.userId.id = :userId and bcc.id = :id")
     Integer exist(Integer userId, Integer id);
+
+    @Transactional
+    @Query("select bcc from BoardChildCommentEntity bcc where bcc.pcommentId.id = :pcommentId ORDER BY bcc.createAt desc")
+    List<BoardChildCommentEntity> findAllByPcommentId_Id(Integer pcommentId);
 
 }

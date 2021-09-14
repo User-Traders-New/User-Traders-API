@@ -15,15 +15,15 @@ public class BoardDetailDto {
 
     private Payload payload;
 
-    private BoardResponseDto boardResponseDto;
+    private BoardResponseLoginDto boardResponseLoginDto;
 
     private List<BoardImageDto> boardImageDto;
 
     @Builder
-    public BoardDetailDto(Payload payload , BoardResponseDto boardResponseDto
+    public BoardDetailDto(Payload payload , BoardResponseLoginDto boardResponseLoginDto
     ,List<BoardImageDto> boardImageDto){
         this.payload = payload;
-        this.boardResponseDto = boardResponseDto;
+        this.boardResponseLoginDto = boardResponseLoginDto;
         this.boardImageDto = boardImageDto;
     }
 }

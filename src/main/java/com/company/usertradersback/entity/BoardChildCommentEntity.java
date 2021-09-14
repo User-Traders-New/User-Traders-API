@@ -25,7 +25,7 @@ public class BoardChildCommentEntity {
     private UserEntity userId;
 
     @ManyToOne
-    @JoinColumn(name = "pCommentId")
+    @JoinColumn(name = "pcommentId")
     // 부모댓글 고유번호
     private BoardParentCommentEntity pcommentId;
 

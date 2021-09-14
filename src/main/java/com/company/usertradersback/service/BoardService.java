@@ -4,9 +4,12 @@ import com.company.usertradersback.config.s3.AwsS3;
 import com.company.usertradersback.dto.board.BoardImageDto;
 import com.company.usertradersback.dto.board.BoardRequestDto;
 import com.company.usertradersback.dto.board.BoardResponseDto;
+import com.company.usertradersback.dto.board.BoardResponseLoginDto;
 import com.company.usertradersback.dto.category.BoardCategoryDto;
 import com.company.usertradersback.dto.category.BoardSubCategoryDto;
 import com.company.usertradersback.dto.comment.BoardChildCommentDto;
+import com.company.usertradersback.dto.comment.BoardChildCommentResponseDto;
+import com.company.usertradersback.dto.comment.BoardParentCommentResponseDto;
 import com.company.usertradersback.dto.comment.BoardParentCommentDto;
 import com.company.usertradersback.dto.declaration.BoardDeclarationDto;
 import com.company.usertradersback.dto.like.BoardLikeUserDto;
@@ -57,7 +60,10 @@ public class BoardService {
     private BoardChildCommenRepository boardChildCommenRepository;
 
     @Autowired
-    private BoardImageQueryDsl boardImageQueryDsl;
+    private BoardQueryDsl boardQueryDsl;
+
+    @Autowired
+    private UserGradesRepository userGradesRepository;
 
     @Autowired
     private AwsS3 awsS3;
@@ -81,7 +87,8 @@ public class BoardService {
                             , boardLikeUserRepository.selectCountBoardId(boardEntity.getId())
                             , boardParentCommentRepository.selectCountBoardIdBCC(boardEntity.getId()) +
                                     boardParentCommentRepository.selectCountBoardIdBPC(boardEntity.getId())
-                            ,boardImageQueryDsl.selectPath(boardEntity.getId())
+                            , boardQueryDsl.selectPath(boardEntity.getId())
+                            , boardQueryDsl.selectGrade(boardEntity.getUserId().getId())
                     );
             return boardResponseDto;
         }).collect(Collectors.toList());
@@ -101,11 +108,13 @@ public class BoardService {
                     .build().convertEntityToDto(boardEntity, boardLikeUserRepository.selectCountBoardId(boardEntity.getId())
                             , boardParentCommentRepository.selectCountBoardIdBCC(boardEntity.getId()) +
                                     boardParentCommentRepository.selectCountBoardIdBPC(boardEntity.getId())
-                    ,boardImageQueryDsl.selectPath(boardEntity.getId()));
+                            , boardQueryDsl.selectPath(boardEntity.getId())
+                            , boardQueryDsl.selectGrade(boardEntity.getUserId().getId()));
             return boardResponseDto;
         }).collect(Collectors.toList());
         return results;
     }
+
 
     //게시물 id를 통해 게시물 목록 1개 조회
     // => 게시물 테이블 ,게시물 - 카테고리, 게시물 - 이미지, 게시물 - 회원 - 회원 닉네임과 이미지
@@ -113,16 +122,46 @@ public class BoardService {
     // => 게시물 좋아요 수
     // => 게시물 - 회원 - 평점
     @Transactional
-    public BoardResponseDto listDetail(Integer id) {
+    public BoardResponseLoginDto listDetail(Integer id, Integer userId) {
         BoardEntity boardEntity = boardRepository.findById(id)
                 .orElseThrow(() -> new ApiIllegalArgumentException("해당되는 게시물 번호 " + id + " 값의 상세정보가 없습니다."));
-        BoardResponseDto board = BoardResponseDto.builder().build().convertEntityToDto(boardEntity, boardLikeUserRepository.selectCountBoardId(boardEntity.getId())
-                ,boardParentCommentRepository.selectCountBoardIdBCC(boardEntity.getId())+
+        BoardResponseLoginDto board = BoardResponseLoginDto.builder().build().convertEntityToDto(boardEntity, boardLikeUserRepository.selectCountBoardId(boardEntity.getId())
+                , boardParentCommentRepository.selectCountBoardIdBCC(boardEntity.getId()) +
                         boardParentCommentRepository.selectCountBoardIdBPC(boardEntity.getId())
-                ,boardImageQueryDsl.selectPath(boardEntity.getId()));
+                , boardQueryDsl.selectPath(boardEntity.getId())
+                , boardQueryDsl.selectGrade(boardEntity.getUserId().getId())
+                , boardQueryDsl.existLikeWhether(id, userId)
+                , this.listComment(id, userId));
         return board;
     }
 
+    //한 게시물안에 들어있는 부모댓글 조회 entity -> dto
+    @Transactional
+    public List<BoardParentCommentResponseDto> listComment(Integer boardId, Integer userId) {
+        List<BoardParentCommentEntity> boardParentCommentEntityList = boardParentCommentRepository.findAllByBoardId_Id(boardId);
+        List<BoardParentCommentResponseDto> result = boardParentCommentEntityList.stream().map(
+                boardParentCommentEntity -> {
+                    BoardParentCommentResponseDto boardParentCommentResponseDto = BoardParentCommentResponseDto.builder()
+                            .build().convertEntityToDto(boardParentCommentEntity
+                                    , this.listChildComment(boardParentCommentEntity.getId())
+                            );
+                    return boardParentCommentResponseDto;
+                }).collect(Collectors.toList());
+        return result;
+    }
+
+    // 부모댓글의 대댓글 조회 entity -> dto
+    @Transactional
+    public List<BoardChildCommentResponseDto> listChildComment(Integer pcommnetId) {
+        List<BoardChildCommentEntity> boardChildCommentEntityList = boardChildCommenRepository.findAllByPcommentId_Id(pcommnetId);
+        List<BoardChildCommentResponseDto> result = boardChildCommentEntityList.stream().map(
+                boardChildCommentEntity -> {
+                    BoardChildCommentResponseDto boardChildCommentResponseDto = BoardChildCommentResponseDto.builder()
+                            .build().convertEntityToDto(boardChildCommentEntity);
+                    return boardChildCommentResponseDto;
+                }).collect(Collectors.toList());
+        return result;
+    }
 
     //검색 keyword를 통해 게시물 title에 keword가 속한 게시물 목록 조회
     @Transactional
@@ -131,9 +170,10 @@ public class BoardService {
         List<BoardResponseDto> results = boardEntityList.stream().map(boardEntity -> {
             BoardResponseDto boardResponseDto = BoardResponseDto.builder()
                     .build().convertEntityToDto(boardEntity, boardLikeUserRepository.selectCountBoardId(boardEntity.getId())
-                            ,boardParentCommentRepository.selectCountBoardIdBCC(boardEntity.getId())+
-                            boardParentCommentRepository.selectCountBoardIdBPC(boardEntity.getId())
-                            ,boardImageQueryDsl.selectPath(boardEntity.getId()));
+                            , boardParentCommentRepository.selectCountBoardIdBCC(boardEntity.getId()) +
+                                    boardParentCommentRepository.selectCountBoardIdBPC(boardEntity.getId())
+                            , boardQueryDsl.selectPath(boardEntity.getId())
+                            , boardQueryDsl.selectGrade(boardEntity.getUserId().getId()));
             return boardResponseDto;
         }).collect(Collectors.toList());
         return results;
@@ -146,9 +186,10 @@ public class BoardService {
         List<BoardResponseDto> results = boardEntityList.stream().map(boardEntity -> {
             BoardResponseDto boardResponseDto = BoardResponseDto.builder()
                     .build().convertEntityToDto(boardEntity, boardLikeUserRepository.selectCountBoardId(boardEntity.getId())
-                            ,boardParentCommentRepository.selectCountBoardIdBCC(boardEntity.getId())+
+                            , boardParentCommentRepository.selectCountBoardIdBCC(boardEntity.getId()) +
                                     boardParentCommentRepository.selectCountBoardIdBPC(boardEntity.getId())
-                            ,boardImageQueryDsl.selectPath(boardEntity.getId()));
+                            , boardQueryDsl.selectPath(boardEntity.getId())
+                            , boardQueryDsl.selectGrade(boardEntity.getUserId().getId()));
             return boardResponseDto;
         }).collect(Collectors.toList());
 
@@ -165,9 +206,10 @@ public class BoardService {
         List<BoardResponseDto> results = userBoardList.stream().map(boardEntity -> {
             BoardResponseDto boardResponseDto = BoardResponseDto.builder()
                     .build().convertEntityToDto(boardEntity, boardLikeUserRepository.selectCountBoardId(boardEntity.getId())
-                            ,boardParentCommentRepository.selectCountBoardIdBCC(boardEntity.getId())+
+                            , boardParentCommentRepository.selectCountBoardIdBCC(boardEntity.getId()) +
                                     boardParentCommentRepository.selectCountBoardIdBPC(boardEntity.getId())
-                            ,boardImageQueryDsl.selectPath(boardEntity.getId()));
+                            , boardQueryDsl.selectPath(boardEntity.getId())
+                            , boardQueryDsl.selectGrade(boardEntity.getUserId().getId()));
             return boardResponseDto;
         }).collect(Collectors.toList());
         return results;
@@ -181,9 +223,10 @@ public class BoardService {
         List<BoardResponseDto> results = userBoardList.stream().map(boardEntity -> {
             BoardResponseDto boardResponseDto = BoardResponseDto.builder()
                     .build().convertEntityToDto(boardEntity, boardLikeUserRepository.selectCountBoardId(boardEntity.getId())
-                            ,boardParentCommentRepository.selectCountBoardIdBCC(boardEntity.getId())+
+                            , boardParentCommentRepository.selectCountBoardIdBCC(boardEntity.getId()) +
                                     boardParentCommentRepository.selectCountBoardIdBPC(boardEntity.getId())
-                            ,boardImageQueryDsl.selectPath(boardEntity.getId()));
+                            , boardQueryDsl.selectPath(boardEntity.getId())
+                            , boardQueryDsl.selectGrade(boardEntity.getUserId().getId()));
             return boardResponseDto;
         }).collect(Collectors.toList());
         return results;
@@ -516,9 +559,9 @@ public class BoardService {
         List<BoardImageEntity> boardImageEntities = boardImageRepository.findAllByBoardId_Id(id);
         List<BoardImageDto> result = boardImageEntities.stream().map(
                 boardImageEntity -> {
-                BoardImageDto boardImageDto = BoardImageDto.builder()
-                        .build().convertEntityToDto(boardImageEntity);
-                return boardImageDto;
+                    BoardImageDto boardImageDto = BoardImageDto.builder()
+                            .build().convertEntityToDto(boardImageEntity);
+                    return boardImageDto;
                 }).collect(Collectors.toList());
         return result;
     }
