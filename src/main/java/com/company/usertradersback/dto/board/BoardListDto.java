@@ -1,4 +1,4 @@
-package com.company.usertradersback.dto;
+package com.company.usertradersback.dto.board;
 
 import com.company.usertradersback.payload.Payload;
 import lombok.Builder;
@@ -14,14 +14,15 @@ import java.util.List;
 // 모든 게시물 List 반환을 위한 BoardListDto
 public class BoardListDto {
 
+
     private Payload payload;
 
-    private List<BoardDto> boardDtoList;
+    private List<BoardResponseDto> boardResponseDtoList;
 
     @Builder
-    public BoardListDto(Payload payload,List<BoardDto> boardDtoList){
+    public BoardListDto(Payload payload, List<BoardResponseDto> boardResponseDtoList) {
         this.payload = payload;
-        this.boardDtoList = boardDtoList;
+        this.boardResponseDtoList = boardResponseDtoList;
     }
 
 }

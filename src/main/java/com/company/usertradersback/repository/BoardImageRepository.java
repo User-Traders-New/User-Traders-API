@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 
 import javax.transaction.Transactional;
 import java.util.List;
+import java.util.Optional;
 
 public interface BoardImageRepository extends JpaRepository<BoardImageEntity,Integer> {
 
@@ -19,4 +20,16 @@ public interface BoardImageRepository extends JpaRepository<BoardImageEntity,Int
     @Modifying
     @Query("delete from BoardImageEntity bi where bi.boardId.id = :boardId")
     void deleteAllByBoardId(Integer boardId);
+
+    @Transactional
+    List<BoardImageEntity> findAllByBoardId_Id(Integer boardId);
+
+    @Transactional
+    @Query("select bi.path from BoardImageEntity bi where bi.boardId.id = :boardId")
+    List<String> selectThumbnailPath(Integer boardId);
+
+    @Transactional
+    Optional<String> findFirstByPath(Integer boardId);
+
+
 }

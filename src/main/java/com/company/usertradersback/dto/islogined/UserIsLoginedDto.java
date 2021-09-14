@@ -1,4 +1,4 @@
-package com.company.usertradersback.dto;
+package com.company.usertradersback.dto.islogined;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;

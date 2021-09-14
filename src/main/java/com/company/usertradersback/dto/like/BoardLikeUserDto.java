@@ -1,4 +1,4 @@
-package com.company.usertradersback.dto;
+package com.company.usertradersback.dto.like;
 
 import com.company.usertradersback.entity.BoardEntity;
 import lombok.Builder;

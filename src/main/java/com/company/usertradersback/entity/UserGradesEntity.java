@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
+import java.time.LocalDateTime;
 
 @Entity
 @NoArgsConstructor
@@ -31,14 +32,20 @@ public class UserGradesEntity {
     // 평점 1~5점
     private Integer grade;
 
+    @Column(name = "createAt")
+    //평정 등록 날짜
+    private LocalDateTime createAt;
+
     @Builder
     public UserGradesEntity(Integer id,
                             UserEntity userSendId,
                             UserEntity userRecvId,
-                            Integer grade) {
+                            Integer grade,
+                            LocalDateTime createAt) {
         this.id = id;
         this.userSendId = userSendId;
         this.userRecvId = userRecvId;
         this.grade = grade;
+        this.createAt = createAt;
     }
 }

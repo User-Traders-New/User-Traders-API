@@ -1,7 +1,15 @@
 package com.company.usertradersback.service;
 
 import com.company.usertradersback.config.s3.AwsS3;
-import com.company.usertradersback.dto.*;
+import com.company.usertradersback.dto.board.BoardImageDto;
+import com.company.usertradersback.dto.board.BoardRequestDto;
+import com.company.usertradersback.dto.board.BoardResponseDto;
+import com.company.usertradersback.dto.category.BoardCategoryDto;
+import com.company.usertradersback.dto.category.BoardSubCategoryDto;
+import com.company.usertradersback.dto.comment.BoardChildCommentDto;
+import com.company.usertradersback.dto.comment.BoardParentCommentDto;
+import com.company.usertradersback.dto.declaration.BoardDeclarationDto;
+import com.company.usertradersback.dto.like.BoardLikeUserDto;
 import com.company.usertradersback.entity.*;
 import com.company.usertradersback.exception.ApiIllegalArgumentException;
 import com.company.usertradersback.exception.ApiNullPointerException;
@@ -49,64 +57,99 @@ public class BoardService {
     private BoardChildCommenRepository boardChildCommenRepository;
 
     @Autowired
+    private BoardImageQueryDsl boardImageQueryDsl;
+
+    @Autowired
     private AwsS3 awsS3;
 
 
     //게시물 전체 조회
+    //java 8 버전부터 사용가능한 stream() -> 기존에 자바 컬렉션이나 배열의 원소를 for문 foreach문으로 하나씩 가공->
+    //stream을 사용하여 람다 함수 형식으로 간결한 처리
+    //stream은 map, filter , sorted 등 있고, 그 중 map을 통해 인덱스의 값 하나하나를 변환하여 최종 Collectors.toList() -> 리스트로 변환한다.
     @Transactional
-    public List<BoardDto> listAll() {
+    public List<BoardResponseDto> listAll() {
+        //boardEntityList에 DB Board테이블에 있는 전부를 넣음.
         List<BoardEntity> boardEntityList = boardRepository.findAll();
-        List<BoardDto> results = boardEntityList.stream().map(boardEntity -> {
-            BoardDto boardDto = BoardDto.builder()
-                    .build().convertEntityToDto(boardEntity);
-            return boardDto;
+
+
+        //List<BoardEntity> boardEntityList의 요소 하나하나인 BoardEntity boardEntity를 순서대로 변환(가공)
+        //여기서 boardEntity는 인자로 사용.
+        List<BoardResponseDto> results = boardEntityList.stream().map(boardEntity -> {
+            BoardResponseDto boardResponseDto = BoardResponseDto.builder()
+                    .build().convertEntityToDto(boardEntity
+                            , boardLikeUserRepository.selectCountBoardId(boardEntity.getId())
+                            , boardParentCommentRepository.selectCountBoardIdBCC(boardEntity.getId()) +
+                                    boardParentCommentRepository.selectCountBoardIdBPC(boardEntity.getId())
+                            ,boardImageQueryDsl.selectPath(boardEntity.getId())
+                    );
+            return boardResponseDto;
         }).collect(Collectors.toList());
         return results;
+
+
     }
 
     // 무한 스크롤 페이지 네이션
     @Transactional
-    public List<BoardDto> listAllInfinite(Integer limit) {
+    public List<BoardResponseDto> listAllInfinite(Integer limit) {
         //전체 게시물을 desc 순으로 (날짜)큰것 -> (날짜)작은것 순으로 3개씩 나눈다. page는 0부터 시작.
         //defaultValue가 1이기 때문에 , page는 limit - 1
         Page<BoardEntity> page = boardRepository.findAll(PageRequest.of(limit - 1, 3, Sort.by(Sort.Direction.DESC, "createAt")));
-        List<BoardDto> results = page.stream().map(boardEntity -> {
-            BoardDto boardDto = BoardDto.builder()
-                    .build().convertEntityToDto(boardEntity);
-            return boardDto;
+        List<BoardResponseDto> results = page.stream().map(boardEntity -> {
+            BoardResponseDto boardResponseDto = BoardResponseDto.builder()
+                    .build().convertEntityToDto(boardEntity, boardLikeUserRepository.selectCountBoardId(boardEntity.getId())
+                            , boardParentCommentRepository.selectCountBoardIdBCC(boardEntity.getId()) +
+                                    boardParentCommentRepository.selectCountBoardIdBPC(boardEntity.getId())
+                    ,boardImageQueryDsl.selectPath(boardEntity.getId()));
+            return boardResponseDto;
         }).collect(Collectors.toList());
         return results;
     }
 
     //게시물 id를 통해 게시물 목록 1개 조회
+    // => 게시물 테이블 ,게시물 - 카테고리, 게시물 - 이미지, 게시물 - 회원 - 회원 닉네임과 이미지
+    // => 게시물 댓글 , 게시물 대댓글, 게시물 댓글 수
+    // => 게시물 좋아요 수
+    // => 게시물 - 회원 - 평점
     @Transactional
-    public BoardDto listDetail(Integer id) {
+    public BoardResponseDto listDetail(Integer id) {
         BoardEntity boardEntity = boardRepository.findById(id)
                 .orElseThrow(() -> new ApiIllegalArgumentException("해당되는 게시물 번호 " + id + " 값의 상세정보가 없습니다."));
-        BoardDto board = BoardDto.builder().build().convertEntityToDto(boardEntity);
+        BoardResponseDto board = BoardResponseDto.builder().build().convertEntityToDto(boardEntity, boardLikeUserRepository.selectCountBoardId(boardEntity.getId())
+                ,boardParentCommentRepository.selectCountBoardIdBCC(boardEntity.getId())+
+                        boardParentCommentRepository.selectCountBoardIdBPC(boardEntity.getId())
+                ,boardImageQueryDsl.selectPath(boardEntity.getId()));
         return board;
     }
 
+
     //검색 keyword를 통해 게시물 title에 keword가 속한 게시물 목록 조회
     @Transactional
-    public List<BoardDto> searchTitle(String keyword) {
+    public List<BoardResponseDto> searchTitle(String keyword) {
         List<BoardEntity> boardEntityList = boardRepository.findByTitleContaining(keyword);
-        List<BoardDto> results = boardEntityList.stream().map(boardEntity -> {
-            BoardDto boardDto = BoardDto.builder()
-                    .build().convertEntityToDto(boardEntity);
-            return boardDto;
+        List<BoardResponseDto> results = boardEntityList.stream().map(boardEntity -> {
+            BoardResponseDto boardResponseDto = BoardResponseDto.builder()
+                    .build().convertEntityToDto(boardEntity, boardLikeUserRepository.selectCountBoardId(boardEntity.getId())
+                            ,boardParentCommentRepository.selectCountBoardIdBCC(boardEntity.getId())+
+                            boardParentCommentRepository.selectCountBoardIdBPC(boardEntity.getId())
+                            ,boardImageQueryDsl.selectPath(boardEntity.getId()));
+            return boardResponseDto;
         }).collect(Collectors.toList());
         return results;
     }
 
     //대분류 카테고리 + 서브카테고리를 통해 해당 게시물 전체 목록 조회
     @Transactional
-    public List<BoardDto> searchCategory(Integer categoryId, Integer subCategoryId) {
+    public List<BoardResponseDto> searchCategory(Integer categoryId, Integer subCategoryId) {
         List<BoardEntity> boardEntityList = boardRepository.selectAll(categoryId, subCategoryId);
-        List<BoardDto> results = boardEntityList.stream().map(boardEntity -> {
-            BoardDto boardDto = BoardDto.builder()
-                    .build().convertEntityToDto(boardEntity);
-            return boardDto;
+        List<BoardResponseDto> results = boardEntityList.stream().map(boardEntity -> {
+            BoardResponseDto boardResponseDto = BoardResponseDto.builder()
+                    .build().convertEntityToDto(boardEntity, boardLikeUserRepository.selectCountBoardId(boardEntity.getId())
+                            ,boardParentCommentRepository.selectCountBoardIdBCC(boardEntity.getId())+
+                                    boardParentCommentRepository.selectCountBoardIdBPC(boardEntity.getId())
+                            ,boardImageQueryDsl.selectPath(boardEntity.getId()));
+            return boardResponseDto;
         }).collect(Collectors.toList());
 
         return results;
@@ -114,28 +157,34 @@ public class BoardService {
 
     //회원 정보를 이용하여 해당 회원의 게시물 전체 목록 조회
     @Transactional
-    public List<BoardDto> listMyBoards(UserEntity userEntity) {
+    public List<BoardResponseDto> listMyBoards(UserEntity userEntity) {
         if (userEntity == null) {
             throw new ApiNullPointerException("유저정보가 없습니다.");
         }
         List<BoardEntity> userBoardList = boardRepository.findAllByUserId_Id(userEntity.getId());
-        List<BoardDto> results = userBoardList.stream().map(boardEntity -> {
-            BoardDto boardDto = BoardDto.builder()
-                    .build().convertEntityToDto(boardEntity);
-            return boardDto;
+        List<BoardResponseDto> results = userBoardList.stream().map(boardEntity -> {
+            BoardResponseDto boardResponseDto = BoardResponseDto.builder()
+                    .build().convertEntityToDto(boardEntity, boardLikeUserRepository.selectCountBoardId(boardEntity.getId())
+                            ,boardParentCommentRepository.selectCountBoardIdBCC(boardEntity.getId())+
+                                    boardParentCommentRepository.selectCountBoardIdBPC(boardEntity.getId())
+                            ,boardImageQueryDsl.selectPath(boardEntity.getId()));
+            return boardResponseDto;
         }).collect(Collectors.toList());
         return results;
     }
 
     //해당 userId를 통해서 해당 회원의 게시물 전체 목록 조회
     @Transactional
-    public List<BoardDto> findAllByUserId(Integer userId) {
+    public List<BoardResponseDto> findAllByUserId(Integer userId) {
 
         List<BoardEntity> userBoardList = boardRepository.findAllByUserId_Id(userId);
-        List<BoardDto> results = userBoardList.stream().map(boardEntity -> {
-            BoardDto boardDto = BoardDto.builder()
-                    .build().convertEntityToDto(boardEntity);
-            return boardDto;
+        List<BoardResponseDto> results = userBoardList.stream().map(boardEntity -> {
+            BoardResponseDto boardResponseDto = BoardResponseDto.builder()
+                    .build().convertEntityToDto(boardEntity, boardLikeUserRepository.selectCountBoardId(boardEntity.getId())
+                            ,boardParentCommentRepository.selectCountBoardIdBCC(boardEntity.getId())+
+                                    boardParentCommentRepository.selectCountBoardIdBPC(boardEntity.getId())
+                            ,boardImageQueryDsl.selectPath(boardEntity.getId()));
+            return boardResponseDto;
         }).collect(Collectors.toList());
         return results;
     }
@@ -175,7 +224,7 @@ public class BoardService {
 
     //게시물 저장
     @Transactional
-    public Integer register(BoardDto boardDto, List<MultipartFile> files, UserEntity user) { // 한 객체를 보드 테이블에 저장, 파일까지 저장
+    public Integer register(BoardRequestDto boardRequestDto, List<MultipartFile> files, UserEntity user) { // 한 객체를 보드 테이블에 저장, 파일까지 저장
 
         String basePath = "board/";
 
@@ -197,7 +246,7 @@ public class BoardService {
 
         // 업로드 될 버킷 객체 url
         String[] url = new String[files.size()];
-        
+
         // 버킷 객체 url , 데이터 베이스에 들어갈 url
         String[] imagePath = new String[files.size()];
 
@@ -218,14 +267,14 @@ public class BoardService {
         //게시물 정보 저장
         BoardEntity boardEntity = boardRepository.save(
                 BoardEntity.builder()
-                        .title(boardDto.getTitle())
+                        .title(boardRequestDto.getTitle())
                         .userId(user)
-                        .content(boardDto.getContent())
-                        .price(boardDto.getPrice())
-                        .categoryId(boardDto.getCategoryId())
-                        .views(boardDto.getViews())
-                        .grade(boardDto.getGrade())
-                        .status(boardDto.getStatus())
+                        .content(boardRequestDto.getContent())
+                        .price(boardRequestDto.getPrice())
+                        .categoryId(boardRequestDto.getCategoryId())
+                        .views(boardRequestDto.getViews())
+                        .grade(boardRequestDto.getGrade())
+                        .status(boardRequestDto.getStatus())
                         .createAt(LocalDateTime.now())
                         .modifiedAt(LocalDateTime.now())
                         .build());
@@ -248,8 +297,8 @@ public class BoardService {
 
     //게시물 수정
     @Transactional
-    public Integer update(List<MultipartFile> files, BoardDto boardDto,
-                           UserEntity user) {
+    public Integer update(List<MultipartFile> files, BoardRequestDto boardRequestDto,
+                          UserEntity user) {
 
         String basePath = "board/";
 
@@ -272,9 +321,9 @@ public class BoardService {
 
         // 업로드 될 버킷 객체 url
         String[] url = new String[files.size()];
-        System.out.println(boardDto.getId());
+        System.out.println(boardRequestDto.getId());
         //현재 해당 유저가 가지고 있는 board의 id로 들어있는 이미지 경로
-        List<String> Cur_imagePath = boardImageRepository.findByPath(boardDto.getId());
+        List<String> Cur_imagePath = boardImageRepository.findByPath(boardRequestDto.getId());
 
         //원래 있었던 s3에 있는 이미지 삭제
         String[] del_imagePath_key = new String[Cur_imagePath.size()];
@@ -297,7 +346,7 @@ public class BoardService {
                         , fileType.get(i), fileLength.get(i));
 
                 // 버킷 객체 url , 데이터 베이스에 들어갈 url
-                imagePath.add(i,"https://usertradersbucket.s3.ap-northeast-2.amazonaws.com/" + url[i]);
+                imagePath.add(i, "https://usertradersbucket.s3.ap-northeast-2.amazonaws.com/" + url[i]);
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -307,18 +356,18 @@ public class BoardService {
         // 요청 받은 수정할 객체 정보를 건내받고 , 그 객체의 아이디를 뽑아서 수정전 정보를 wrapper에 담고
         // 수정 할 객체 정보를 수정전 객체 정보에 저장 ,  수정 끝
         //Optinal 클래스의 ifPresent 함수의 사용: 수정값에 null이 있는지 확인하는 if문을 줄이기 위함
-        Optional<BoardEntity> boardEntityWrapper = boardRepository.findById(boardDto.getId());
+        Optional<BoardEntity> boardEntityWrapper = boardRepository.findById(boardRequestDto.getId());
         boardEntityWrapper.ifPresent(boardEntity -> {
             boardEntity = BoardEntity.builder()
-                    .id(boardDto.getId())
-                    .title(boardDto.getTitle())
+                    .id(boardRequestDto.getId())
+                    .title(boardRequestDto.getTitle())
                     .userId(user)
-                    .content(boardDto.getContent())
-                    .price(boardDto.getPrice())
-                    .categoryId(boardDto.getCategoryId())
-                    .views(boardDto.getViews())
-                    .grade(boardDto.getGrade())
-                    .status(boardDto.getStatus())
+                    .content(boardRequestDto.getContent())
+                    .price(boardRequestDto.getPrice())
+                    .categoryId(boardRequestDto.getCategoryId())
+                    .views(boardRequestDto.getViews())
+                    .grade(boardRequestDto.getGrade())
+                    .status(boardRequestDto.getStatus())
                     .createAt(boardEntityWrapper.get().getCreateAt())
                     .modifiedAt(LocalDateTime.now())
                     .build();
@@ -328,7 +377,7 @@ public class BoardService {
 
         //게시물 이미지 정보 수정 -> 해당 게시물 이미지 삭제 후 다시 저장
         //원래 게시물 이미지 삭제
-        boardImageRepository.deleteAllByBoardId(boardDto.getId());
+        boardImageRepository.deleteAllByBoardId(boardRequestDto.getId());
         // 새로운 이미지 저장
         for (int i = 0; i < files.size(); i++) {
             boardImageRepository.save(BoardImageEntity.builder()
@@ -356,13 +405,13 @@ public class BoardService {
     // 유저 - 좋아요 - 게시물
     @Transactional
     public boolean like(UserEntity user, BoardLikeUserDto boardLikeUserDto) {
-        if(boardLikeUserRepository.exist(user.getId(),boardLikeUserDto.getBoardId().getId())>=1){
-            Integer a = boardLikeUserRepository.deleteById(user.getId(),boardLikeUserDto.getBoardId().getId());
-            if(a > 0){
+        if (boardLikeUserRepository.exist(user.getId(), boardLikeUserDto.getBoardId().getId()) >= 1) {
+            Integer a = boardLikeUserRepository.deleteById(user.getId(), boardLikeUserDto.getBoardId().getId());
+            if (a > 0) {
                 return true;
-            }else throw new ApiIllegalArgumentException("좋아요 취소 실패!!");
+            } else throw new ApiIllegalArgumentException("좋아요 취소 실패!!");
 
-        }else {
+        } else {
             Integer a = boardLikeUserRepository.save(
                     BoardLikeUserEntity.builder()
                             .boardId(boardLikeUserDto.getBoardId())
@@ -371,16 +420,17 @@ public class BoardService {
                             .build()
             ).getId();
 
-            if(a > 0){
+            if (a > 0) {
                 return false;
-            }else throw new ApiIllegalArgumentException("좋아요 실패!!");
+            } else throw new ApiIllegalArgumentException("좋아요 실패!!");
         }
     }
+
     @Transactional
     //내가 좋아하는 게시물 리스트
     public List<BoardLikeUserDto> likeList(UserEntity user) {
         List<BoardLikeUserEntity> boardEntityList =
-        boardLikeUserRepository. findAllByUserId_Id(user.getId());
+                boardLikeUserRepository.findAllByUserId_Id(user.getId());
         List<BoardLikeUserDto> results = boardEntityList.stream().map(boardLikeUserEntity -> {
             BoardLikeUserDto boardLikeUserDto = BoardLikeUserDto.builder()
                     .id(boardLikeUserEntity.getId())
@@ -390,6 +440,7 @@ public class BoardService {
         }).collect(Collectors.toList());
         return results;
     }
+
     @Transactional
     //해당 게시물 신고하기 , 저장
     public Integer declaration(UserEntity user, BoardDeclarationDto boardDeclarationDto) {
@@ -403,10 +454,12 @@ public class BoardService {
                         .build()
         ).getId();
     }
+
     //해당 게시물 신고 중복 검사
     public Integer declarationVaild(Integer userId, Integer boardId) {
         return boardDeclaraionRepository.exist(userId, boardId);
     }
+
     @Transactional
     // 댓글 저장
     public Integer pComment(UserEntity user, BoardParentCommentDto boardParentCommentDto) {
@@ -419,16 +472,17 @@ public class BoardService {
                         .build()
         ).getId();
     }
+
     @Transactional
     //댓글삭제
     public void pCommentDelete(UserEntity user, Integer id) {
-       boardParentCommentRepository.deleteById(user,id);
+        boardParentCommentRepository.deleteById(user, id);
     }
 
     @Transactional
     //해당 댓글이 내 댓글인지 검사,존재여부
-    public Integer pCommentDeleteValid(Integer userId,Integer id){
-       return boardParentCommentRepository.exist(userId,id);
+    public Integer pCommentDeleteValid(Integer userId, Integer id) {
+        return boardParentCommentRepository.exist(userId, id);
     }
 
     @Transactional
@@ -443,17 +497,29 @@ public class BoardService {
                         .build()
         ).getId();
     }
+
     @Transactional
     //대댓글 삭제
     public void cCommentDelete(UserEntity user, Integer id) {
-        boardChildCommenRepository.deleteById(user,id);
+        boardChildCommenRepository.deleteById(user, id);
     }
 
     @Transactional
     //해당 대댓글이 내 댓글인지 검사,존재여부
-    public Integer cCommentDeleteValid(Integer userId,Integer id){
-        return boardChildCommenRepository.exist(userId,id);
+    public Integer cCommentDeleteValid(Integer userId, Integer id) {
+        return boardChildCommenRepository.exist(userId, id);
     }
 
-
+    //해당 게시물의 들어있는 이미지 리스트
+    @Transactional
+    public List<BoardImageDto> listImage(Integer id) {
+        List<BoardImageEntity> boardImageEntities = boardImageRepository.findAllByBoardId_Id(id);
+        List<BoardImageDto> result = boardImageEntities.stream().map(
+                boardImageEntity -> {
+                BoardImageDto boardImageDto = BoardImageDto.builder()
+                        .build().convertEntityToDto(boardImageEntity);
+                return boardImageDto;
+                }).collect(Collectors.toList());
+        return result;
+    }
 }

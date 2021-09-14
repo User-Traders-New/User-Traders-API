@@ -18,4 +18,13 @@ public interface BoardParentCommentRepository extends JpaRepository<BoardParentC
     @Transactional
     @Query("select count(bpc.id) from BoardParentCommentEntity bpc where bpc.userId.id = :userId and bpc.id = :id")
     Integer exist(Integer userId, Integer id);
+
+    @Transactional
+    @Query("select count(bpc.id) from BoardParentCommentEntity bpc left join BoardChildCommentEntity bcc on bpc.id = bcc.pcommentId.id " +
+            "where bpc.boardId.id = :boardId")
+    Integer selectCountBoardIdBCC(Integer boardId);
+
+    @Transactional
+    @Query("select count(bpc.id) from BoardParentCommentEntity bpc where bpc.boardId.id = :boardId")
+    Integer selectCountBoardIdBPC(Integer boardId);
 }

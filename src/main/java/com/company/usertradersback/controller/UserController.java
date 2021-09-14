@@ -1,7 +1,14 @@
 package com.company.usertradersback.controller;
 
 
-import com.company.usertradersback.dto.*;
+import com.company.usertradersback.dto.department.UserDepartmentDto;
+import com.company.usertradersback.dto.department.UserDepartmentListDto;
+import com.company.usertradersback.dto.grades.UserGradesDto;
+import com.company.usertradersback.dto.user.UserDto;
+import com.company.usertradersback.dto.user.UserTokenDto;
+import com.company.usertradersback.dto.user.UserValidDto;
+import com.company.usertradersback.dto.usercheck.UserEmailCheckDto;
+import com.company.usertradersback.dto.usercheck.UserNicknameCheckDto;
 import com.company.usertradersback.entity.UserEntity;
 import com.company.usertradersback.env.Url;
 import com.company.usertradersback.payload.Payload;
@@ -404,11 +411,17 @@ public class UserController {
             if(userGradesDto.getGrade() == null){
                 return new ResponseEntity<>("요청값에 grade가 없습니다.", HttpStatus.BAD_REQUEST);
             }
+            if(userGradesDto.getGrade() > 5){
+                return new ResponseEntity<>(" grade가 5점 초과 일 수 없습니다.", HttpStatus.BAD_REQUEST);
+            }
+            if(userGradesDto.getGrade() < 0){
+                return new ResponseEntity<>("grade가 0점 미만 일 수 없습니다.", HttpStatus.BAD_REQUEST);
+            }
             if (token == null) {
                 return new ResponseEntity<>("요청값에 토큰값이 없습니다.", HttpStatus.BAD_REQUEST);
             }
             if (userService.validToken(token)) {
-
+                    userService.grades(userGradesDto,user);
                     Payload payload = Payload.builder()
                             .message("해당 게시물 유저에게 점수 부여에 성공하였습니다.")
                             .isSuccess(true)

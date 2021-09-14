@@ -1,27 +1,26 @@
-package com.company.usertradersback.dto;
+package com.company.usertradersback.dto.board;
 
+import com.company.usertradersback.dto.user.UserConciseDto;
 import com.company.usertradersback.entity.BoardCategoryEntity;
 import com.company.usertradersback.entity.BoardEntity;
-import com.company.usertradersback.entity.UserEntity;
-import com.company.usertradersback.payload.Payload;
-import lombok.*;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 
 @Getter
 @Setter
 @NoArgsConstructor
-//게시물 저장 및 , 전체 조회를 위한 BoardDto (responseDto 및 requestDto)
-public class BoardDto {
-
-    //고정 페이로드
-    private Payload payload;
+//필요한 게시물 정보만 조회를 위한 ResponseDto
+public class BoardResponseDto {
 
     // 게시물 고유번호
     private Integer id;
 
     // 회원 고유번호
-    private UserEntity userId;
+    private UserConciseDto userId;
 
     // 게시물 제목
     private String title;
@@ -50,13 +49,24 @@ public class BoardDto {
     // 게시물 수정날짜
     private LocalDateTime modifiedAt;
 
-    // 빌더
+    //좋아요 총 수
+    private Integer likeCount;
+
+    //채팅 수
+    private Integer chatCount;
+
+    //댓글 수
+    private Integer commentCount;
+
+    //썸네일
+    private String thumbnail;
+
     @Builder
-    public BoardDto(Payload payload,Integer id,UserEntity userId, String title, String content,
-                    String price, BoardCategoryEntity categoryId, Integer views,
-                    Integer grade,Integer status,
-                    LocalDateTime createAt, LocalDateTime modifiedAt) {
-        this.payload = payload;
+    public BoardResponseDto(Integer id, UserConciseDto userId, String title,
+                            String content, String price, BoardCategoryEntity categoryId, Integer views, Integer grade,
+                            Integer status, LocalDateTime createAt, LocalDateTime modifiedAt,
+                            Integer likeCount, Integer chatCount, Integer commentCount
+            , String thumbnail) {
         this.id = id;
         this.userId = userId;
         this.title = title;
@@ -68,30 +78,20 @@ public class BoardDto {
         this.status = status;
         this.createAt = createAt;
         this.modifiedAt = modifiedAt;
+        this.likeCount = likeCount;
+        this.chatCount = chatCount;
+        this.commentCount = commentCount;
+        this.thumbnail = thumbnail;
     }
 
-    //게시물 글쓰기 저장을 위한 BoardDto를 BoardEntity로 변환.
-    public BoardEntity convertDtoToEntity() {
-        BoardEntity boardEntity = BoardEntity.builder()
-                .id(id)
-                .userId(userId)
-                .title(title)
-                .content(content)
-                .price(price)
-                .categoryId(categoryId)
-                .views(views)
-                .grade(grade)
-                .status(status)
-                .createAt(createAt)
-                .modifiedAt(modifiedAt)
-                .build();
-        return boardEntity;
-    }
-    //게시물 전체 조회를 위한, BoardEntity 를 BoardDto 로 변환
-    public BoardDto convertEntityToDto(BoardEntity boardEntity) {
-        return BoardDto.builder()
+    //게시물 전체 조회를 위한, BoardEntity 를 BoardResponseDto 로 변환
+    public BoardResponseDto convertEntityToDto(BoardEntity boardEntity
+            , Integer likeCount, Integer commentCount,String thumbnail
+    ) {
+
+        return BoardResponseDto.builder()
                 .id(boardEntity.getId())
-                .userId(boardEntity.getUserId())
+                .userId(new UserConciseDto().convertEntityToDto(boardEntity.getUserId()))
                 .title(boardEntity.getTitle())
                 .content(boardEntity.getContent())
                 .price(boardEntity.getPrice())
@@ -101,6 +101,9 @@ public class BoardDto {
                 .status(boardEntity.getStatus())
                 .createAt(boardEntity.getCreateAt())
                 .modifiedAt(boardEntity.getModifiedAt())
+                .likeCount(likeCount)
+                .commentCount(commentCount)
+                .thumbnail(thumbnail)
                 .build();
     }
 }

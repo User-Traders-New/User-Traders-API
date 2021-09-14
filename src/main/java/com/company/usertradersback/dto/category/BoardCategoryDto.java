@@ -1,4 +1,4 @@
-package com.company.usertradersback.dto;
+package com.company.usertradersback.dto.category;
 
 import com.company.usertradersback.entity.BoardSubCategoryEntity;
 import lombok.*;
@@ -25,4 +25,5 @@ public class BoardCategoryDto {
         this.subCategoryId = subCategoryId;
         this.name = name;
     }
+
 }
