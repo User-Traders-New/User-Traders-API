@@ -110,27 +110,37 @@ public class BoardController {
     // 한 게시물 의 id 안에 들어 있는 정보를 조회
     //@PathVariable :url 파라 미터 값 id를 인자로 받음.
     // => 게시물 테이블 ok ,게시물 - 카테고리 ok, 게시물 - 이미지 ok, 게시물 - 회원 - 회원 닉네임 과 이미지 ok
-    // => 게시물 댓글 , 게시물 대댓글, 게시물 댓글 수 ok
-    // => 게시물 좋아요 수 ok, 채팅 수 ok , 좋아요 인지 아닌지
-    // => 게시물 - 회원 - 평점 - 평균
+    // => 게시물 댓글 ok , 게시물 대댓글 ok, 게시물 댓글 수 ok
+    // => 게시물 좋아요 수 ok, 채팅 수 ok , 좋아요 인지 아닌지 ok
+    // => 게시물 - 회원 - 평점 - 평균 ok
+    // 토큰값으로 조회수 views 1증가 , 중복 증가 x
     @GetMapping(value = "/list/detail/{id}")
-    public ResponseEntity listDetail(@PathVariable("id") Integer id) {
+    public ResponseEntity listDetail(@PathVariable("id") Integer id
+            , @RequestHeader("token") String token
+            , @AuthenticationPrincipal UserEntity userEntity
+    ) {
         try {
             if (id == null) {
                 return new ResponseEntity<>("요청값에 게시물 id값이 존재하지 않습니다.", HttpStatus.BAD_REQUEST);
+            } if (token == null) {
+                return new ResponseEntity<>("요청값에 토큰값이 없습니다.", HttpStatus.BAD_REQUEST);
             }
-            Payload payload = Payload.builder()
-                    .message("해당 페이지 게시물 조회에 성공하였습니다.")
-                    .isSuccess(true)
-                    .httpStatus(HttpStatus.OK)
-                    .build();
-            BoardDetailDto boardDetailDto = BoardDetailDto.builder()
-                    .payload(payload)
-                    .boardResponseDto(boardService.listDetail(id))
-                    .boardImageDto(boardService.listImage(id))
-                    .build();
+            if (userService.validToken(token)) {
+                Payload payload = Payload.builder()
+                        .message("해당 페이지 게시물 조회에 성공하였습니다.")
+                        .isSuccess(true)
+                        .httpStatus(HttpStatus.OK)
+                        .build();
+                BoardDetailDto boardDetailDto = BoardDetailDto.builder()
+                        .payload(payload)
+                        .boardResponseLoginDto(boardService.listDetail(id,userEntity.getId()))
+                        .boardImageDto(boardService.listImage(id))
+                        .build();
 
-            return new ResponseEntity<>(boardDetailDto, HttpStatus.OK);
+                return new ResponseEntity<>(boardDetailDto, HttpStatus.OK);
+            } else {
+                return new ResponseEntity<>("토큰이 만료 되었습니다.", HttpStatus.UNAUTHORIZED);
+            }
         } catch (Exception e) {
             e.printStackTrace();
             Payload payload = Payload.builder()
@@ -576,27 +586,25 @@ public class BoardController {
             , @AuthenticationPrincipal UserEntity user
     ) {
         try {
-            if(boardDeclarationDto.getBoardId() == null){
-                    return new ResponseEntity<>("요청값에 해당 게시물 boardId 객체가 없습니다.", HttpStatus.BAD_REQUEST);
+            if (boardDeclarationDto.getBoardId() == null) {
+                return new ResponseEntity<>("요청값에 해당 게시물 boardId 객체가 없습니다.", HttpStatus.BAD_REQUEST);
             }
-            if(boardDeclarationDto.getContent() == null){
+            if (boardDeclarationDto.getContent() == null) {
                 return new ResponseEntity<>("요청값에 해당 게시물 content(신고내용)가 없습니다.", HttpStatus.BAD_REQUEST);
             }
             if (token == null) {
                 return new ResponseEntity<>("요청값에 토큰값이 없습니다.", HttpStatus.BAD_REQUEST);
             }
             if (userService.validToken(token)) {
-                if(boardService.declarationVaild(user.getId(),boardDeclarationDto.getBoardId().getId())>=1)
-                {
+                if (boardService.declarationVaild(user.getId(), boardDeclarationDto.getBoardId().getId()) >= 1) {
                     Payload payload = Payload.builder()
                             .message("해당 게시물은 이미 신고하였습니다.")
                             .isSuccess(true)
                             .httpStatus(HttpStatus.OK)
                             .build();
                     return new ResponseEntity<>(payload, HttpStatus.OK);
-                }else
-                {
-                    boardService.declaration(user,boardDeclarationDto);
+                } else {
+                    boardService.declaration(user, boardDeclarationDto);
                     Payload payload = Payload.builder()
                             .message("해당 게시물 신고 저장에 성공하였습니다.")
                             .isSuccess(true)
@@ -625,12 +633,12 @@ public class BoardController {
             @RequestBody BoardParentCommentDto boardParentCommentDto
             , @RequestHeader("token") String token
             , @AuthenticationPrincipal UserEntity user
-    ){
+    ) {
         try {
-            if(boardParentCommentDto.getBoardId() == null){
+            if (boardParentCommentDto.getBoardId() == null) {
                 return new ResponseEntity<>("요청값에 해당 게시물 boardId 객체가 없습니다.", HttpStatus.BAD_REQUEST);
             }
-            if(boardParentCommentDto.getComment() == null){
+            if (boardParentCommentDto.getComment() == null) {
                 return new ResponseEntity<>("요청값에 댓글 comment가 없습니다.", HttpStatus.BAD_REQUEST);
             }
             if (token == null) {
@@ -638,7 +646,7 @@ public class BoardController {
             }
             if (userService.validToken(token)) {
 
-                boardService.pComment(user,boardParentCommentDto);
+                boardService.pComment(user, boardParentCommentDto);
                 Payload payload = Payload.builder()
                         .message("해당 게시물 댓글 저장에 성공하였습니다.")
                         .isSuccess(true)
@@ -667,17 +675,17 @@ public class BoardController {
             @RequestParam("pCommentId") Integer id
             , @RequestHeader("token") String token
             , @AuthenticationPrincipal UserEntity user
-    ){
+    ) {
         try {
-            if(id == null){
+            if (id == null) {
                 return new ResponseEntity<>("요청값에 해당 댓글 pCommentId가 없습니다.", HttpStatus.BAD_REQUEST);
             }
             if (token == null) {
                 return new ResponseEntity<>("요청값에 토큰값이 없습니다.", HttpStatus.BAD_REQUEST);
             }
             if (userService.validToken(token)) {
-                if(boardService.pCommentDeleteValid(user.getId(),id)>=1){
-                    boardService.pCommentDelete(user,id);
+                if (boardService.pCommentDeleteValid(user.getId(), id) >= 1) {
+                    boardService.pCommentDelete(user, id);
                     Payload payload = Payload.builder()
                             .message("해당 게시물 댓글 삭제에 성공하였습니다.")
                             .isSuccess(true)
@@ -685,7 +693,7 @@ public class BoardController {
                             .build();
 
                     return new ResponseEntity<>(payload, HttpStatus.OK);
-                }else {
+                } else {
                     Payload payload = Payload.builder()
                             .message("자기자신의 댓글만 삭제 할 수 있습니다.")
                             .isSuccess(true)
@@ -715,12 +723,12 @@ public class BoardController {
             @RequestBody BoardChildCommentDto boardChildCommentDto
             , @RequestHeader("token") String token
             , @AuthenticationPrincipal UserEntity user
-    ){
+    ) {
         try {
-            if(boardChildCommentDto.getPcommentId().getId()==null){
-                    return new ResponseEntity<>("요청값에 해당 댓글 pCommentId 객체가 없습니다.", HttpStatus.BAD_REQUEST);
+            if (boardChildCommentDto.getPcommentId().getId() == null) {
+                return new ResponseEntity<>("요청값에 해당 댓글 pCommentId 객체가 없습니다.", HttpStatus.BAD_REQUEST);
             }
-            if(boardChildCommentDto.getComment() == null){
+            if (boardChildCommentDto.getComment() == null) {
                 return new ResponseEntity<>("요청값에 댓글 comment가 없습니다.", HttpStatus.BAD_REQUEST);
             }
             if (token == null) {
@@ -728,9 +736,9 @@ public class BoardController {
             }
             if (userService.validToken(token)) {
 
-                boardService.cComment(user,boardChildCommentDto);
+                boardService.cComment(user, boardChildCommentDto);
                 Payload payload = Payload.builder()
-                        .message(boardChildCommentDto.getPcommentId().getId()+"번 댓글에 " +
+                        .message(boardChildCommentDto.getPcommentId().getId() + "번 댓글에 " +
                                 "대댓글 저장을 성공하였습니다.")
                         .isSuccess(true)
                         .httpStatus(HttpStatus.OK)
@@ -744,7 +752,7 @@ public class BoardController {
         } catch (Exception e) {
             e.printStackTrace();
             Payload payload = Payload.builder()
-                    .message(boardChildCommentDto.getPcommentId().getId()+"번 댓글에 " +
+                    .message(boardChildCommentDto.getPcommentId().getId() + "번 댓글에 " +
                             "대댓글 저장을 실패하였습니다.")
                     .isSuccess(false)
                     .httpStatus(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -752,23 +760,24 @@ public class BoardController {
             return new ResponseEntity<>(payload, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
     //대댓글 삭제
     @DeleteMapping(value = "/child/comment")
     public ResponseEntity cCommentDelete(
             @RequestParam("cCommentId") Integer id
             , @RequestHeader("token") String token
             , @AuthenticationPrincipal UserEntity user
-    ){
+    ) {
         try {
-            if(id == null){
+            if (id == null) {
                 return new ResponseEntity<>("요청값에 해당 댓글 cCommentId가 없습니다.", HttpStatus.BAD_REQUEST);
             }
             if (token == null) {
                 return new ResponseEntity<>("요청값에 토큰값이 없습니다.", HttpStatus.BAD_REQUEST);
             }
             if (userService.validToken(token)) {
-                if(boardService.cCommentDeleteValid(user.getId(),id)>=1){
-                    boardService.cCommentDelete(user,id);
+                if (boardService.cCommentDeleteValid(user.getId(), id) >= 1) {
+                    boardService.cCommentDelete(user, id);
                     Payload payload = Payload.builder()
                             .message("해당 게시물 댓글 삭제에 성공하였습니다.")
                             .isSuccess(true)
@@ -776,7 +785,7 @@ public class BoardController {
                             .build();
 
                     return new ResponseEntity<>(payload, HttpStatus.OK);
-                }else {
+                } else {
                     Payload payload = Payload.builder()
                             .message("자기자신의 댓글만 삭제 할 수 있습니다.")
                             .isSuccess(true)

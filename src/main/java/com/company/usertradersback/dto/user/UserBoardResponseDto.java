@@ -9,8 +9,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-//간략한 회원 정보 UserConciseDto
-public class UserConciseDto {
+public class UserBoardResponseDto {
 
     private Integer id;
 
@@ -18,24 +17,21 @@ public class UserConciseDto {
 
     private String imagePath;
 
-    private String userGrade;
 
     @Builder
-    public UserConciseDto(Integer id, String nickName, String imagePath,String userGrade) {
+    public UserBoardResponseDto(Integer id, String nickName, String imagePath) {
         this.id = id;
         this.nickName = nickName;
         this.imagePath = imagePath;
-        this.userGrade = userGrade;
     }
 
-    //게시물 조회에서 회원(user)의 특정 칼럼만 조회하기 위한, userEntity의 특정 데이터만 userConciseDto 로 변환
-    public UserConciseDto convertEntityToDto(UserEntity userEntity,String userGrade) {
-        return UserConciseDto.builder()
+    public UserBoardResponseDto convertEntityToDto(UserEntity userEntity) {
+        return UserBoardResponseDto.builder()
                 .id(userEntity.getId())
                 .nickName(userEntity.getNickname())
                 .imagePath(userEntity.getImagePath())
-                .userGrade(userGrade)
                 .build();
     }
+
 
 }

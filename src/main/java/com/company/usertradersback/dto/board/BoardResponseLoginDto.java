@@ -1,5 +1,6 @@
 package com.company.usertradersback.dto.board;
 
+import com.company.usertradersback.dto.comment.BoardParentCommentResponseDto;
 import com.company.usertradersback.dto.user.UserConciseDto;
 import com.company.usertradersback.entity.BoardCategoryEntity;
 import com.company.usertradersback.entity.BoardEntity;
@@ -9,12 +10,14 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter
 @Setter
 @NoArgsConstructor
-//필요한 게시물 정보만 조회를 위한 ResponseDto
-public class BoardResponseDto {
+//왜 똑같은 BoardResponseDto를 BoardResponseLoginDto로 나누었나>??
+// 전체 목록, 페이징 목록, 검색 목록에 보여질 BoardResponseDto는 좋아요 인지 아닌지와 댓글,대댓글 조회가 필요없기 때문에 나누었다.
+public class BoardResponseLoginDto {
 
     // 게시물 고유번호
     private Integer id;
@@ -61,14 +64,19 @@ public class BoardResponseDto {
     //썸네일
     private String thumbnail;
 
+    //해당 게시물을 현재 로그인한 사용자가 좋아하는지 아닌지
+    private Boolean likeWhether;
 
+    //해당 댓글 대댓글
+    private List<BoardParentCommentResponseDto> boardParentComment;
 
-    @Builder
-    public BoardResponseDto(Integer id, UserConciseDto userId, String title,
+   @Builder
+    public BoardResponseLoginDto(Integer id, UserConciseDto userId, String title,
                             String content, String price, BoardCategoryEntity categoryId, Integer views, Integer grade,
                             Integer status, LocalDateTime createAt, LocalDateTime modifiedAt,
                             Integer likeCount, Integer chatCount, Integer commentCount
-            , String thumbnail) {
+            , String thumbnail,Boolean likeWhether
+   ,List<BoardParentCommentResponseDto> boardParentComment) {
         this.id = id;
         this.userId = userId;
         this.title = title;
@@ -84,16 +92,17 @@ public class BoardResponseDto {
         this.chatCount = chatCount;
         this.commentCount = commentCount;
         this.thumbnail = thumbnail;
-
+        this.likeWhether = likeWhether;
+        this.boardParentComment = boardParentComment;
     }
 
     //게시물 전체 조회를 위한, BoardEntity 를 BoardResponseDto 로 변환
-    public BoardResponseDto convertEntityToDto(BoardEntity boardEntity
+    public BoardResponseLoginDto convertEntityToDto(BoardEntity boardEntity
             , Integer likeCount, Integer commentCount,String thumbnail,String userGrade
-
+            ,Boolean likeWhether ,List<BoardParentCommentResponseDto> boardParentComment
     ) {
 
-        return BoardResponseDto.builder()
+        return BoardResponseLoginDto.builder()
                 .id(boardEntity.getId())
                 .userId(new UserConciseDto().convertEntityToDto(boardEntity.getUserId(),userGrade))
                 .title(boardEntity.getTitle())
@@ -108,6 +117,9 @@ public class BoardResponseDto {
                 .likeCount(likeCount)
                 .commentCount(commentCount)
                 .thumbnail(thumbnail)
+                .likeWhether(likeWhether)
+                .boardParentComment(boardParentComment)
                 .build();
     }
 }
+

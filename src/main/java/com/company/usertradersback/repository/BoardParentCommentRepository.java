@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
 import javax.transaction.Transactional;
+import java.util.List;
 
 public interface BoardParentCommentRepository extends JpaRepository<BoardParentCommentEntity,Integer> {
 
@@ -27,4 +28,8 @@ public interface BoardParentCommentRepository extends JpaRepository<BoardParentC
     @Transactional
     @Query("select count(bpc.id) from BoardParentCommentEntity bpc where bpc.boardId.id = :boardId")
     Integer selectCountBoardIdBPC(Integer boardId);
+
+    @Transactional
+    @Query("select bpc from BoardParentCommentEntity bpc where bpc.boardId.id = :boardId ORDER BY bpc.createAt desc")
+    List<BoardParentCommentEntity> findAllByBoardId_Id(Integer boardId);
 }
