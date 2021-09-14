@@ -1,4 +1,4 @@
-package com.company.usertradersback.dto;
+package com.company.usertradersback.dto.usercheck;
 
 import com.company.usertradersback.payload.Payload;
 import lombok.Builder;

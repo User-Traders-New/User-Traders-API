@@ -1,4 +1,4 @@
-package com.company.usertradersback.dto;
+package com.company.usertradersback.dto.user;
 
 import com.company.usertradersback.entity.UserDepartmentEntity;
 import com.company.usertradersback.entity.UserEntity;

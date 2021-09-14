@@ -1,7 +1,19 @@
 package com.company.usertradersback.controller;
 
 
-import com.company.usertradersback.dto.*;
+import com.company.usertradersback.dto.board.BoardDetailDto;
+import com.company.usertradersback.dto.board.BoardRequestDto;
+import com.company.usertradersback.dto.board.BoardListDto;
+import com.company.usertradersback.dto.board.BoardResponseDto;
+import com.company.usertradersback.dto.category.BoardCategoryDto;
+import com.company.usertradersback.dto.category.BoardCategoryListDto;
+import com.company.usertradersback.dto.category.BoardSubCategoryDto;
+import com.company.usertradersback.dto.category.BoardSubCategoryListDto;
+import com.company.usertradersback.dto.comment.BoardChildCommentDto;
+import com.company.usertradersback.dto.comment.BoardParentCommentDto;
+import com.company.usertradersback.dto.declaration.BoardDeclarationDto;
+import com.company.usertradersback.dto.like.BoardLikeListDto;
+import com.company.usertradersback.dto.like.BoardLikeUserDto;
 import com.company.usertradersback.entity.UserEntity;
 import com.company.usertradersback.env.Url;
 import com.company.usertradersback.payload.Payload;
@@ -32,11 +44,12 @@ public class BoardController {
     private UserService userService;
 
     // 모든 게시물 리스트 조회
+    // 게시물 리스트 정보 : BoardResponseDto(likeCount와 chatCount 추가),UserConciseDto,boardImageDto 중 썸네일
     @GetMapping(value = "/list/all")
     public ResponseEntity listAll() {
 
         try {
-            List<BoardDto> List = boardService.listAll();
+            List<BoardResponseDto> List = boardService.listAll();
 
             Payload payload = Payload.builder()
                     .message("전체 게시물 리스트 조회에 성공하였습니다.")
@@ -46,7 +59,7 @@ public class BoardController {
 
             BoardListDto boardListDto = BoardListDto.builder()
                     .payload(payload)
-                    .boardDtoList(List)
+                    .boardResponseDtoList(List)
                     .build();
 
             return new ResponseEntity<>(boardListDto, HttpStatus.OK);
@@ -69,7 +82,7 @@ public class BoardController {
                 return new ResponseEntity<>("요청값에 limit값이 존재 하지 않습니다..", HttpStatus.BAD_REQUEST);
             }
 
-            List<BoardDto> List = boardService.listAllInfinite(limit);
+            List<BoardResponseDto> List = boardService.listAllInfinite(limit);
 
             Payload payload = Payload.builder()
                     .message("해당 페이지 게시물 조회에 성공하였습니다.")
@@ -79,7 +92,7 @@ public class BoardController {
 
             BoardListDto boardListDto = BoardListDto.builder()
                     .payload(payload)
-                    .boardDtoList(List)
+                    .boardResponseDtoList(List)
                     .build();
 
             return new ResponseEntity<>(boardListDto, HttpStatus.OK);
@@ -96,6 +109,10 @@ public class BoardController {
 
     // 한 게시물 의 id 안에 들어 있는 정보를 조회
     //@PathVariable :url 파라 미터 값 id를 인자로 받음.
+    // => 게시물 테이블 ok ,게시물 - 카테고리 ok, 게시물 - 이미지 ok, 게시물 - 회원 - 회원 닉네임 과 이미지 ok
+    // => 게시물 댓글 , 게시물 대댓글, 게시물 댓글 수 ok
+    // => 게시물 좋아요 수 ok, 채팅 수 ok , 좋아요 인지 아닌지
+    // => 게시물 - 회원 - 평점 - 평균
     @GetMapping(value = "/list/detail/{id}")
     public ResponseEntity listDetail(@PathVariable("id") Integer id) {
         try {
@@ -109,7 +126,8 @@ public class BoardController {
                     .build();
             BoardDetailDto boardDetailDto = BoardDetailDto.builder()
                     .payload(payload)
-                    .boardDto(boardService.listDetail(id))
+                    .boardResponseDto(boardService.listDetail(id))
+                    .boardImageDto(boardService.listImage(id))
                     .build();
 
             return new ResponseEntity<>(boardDetailDto, HttpStatus.OK);
@@ -129,7 +147,7 @@ public class BoardController {
     public ResponseEntity searchTitleOrContent(@RequestParam String keyword) {
 
         try {
-            List<BoardDto> List = boardService.searchTitle(keyword);
+            List<BoardResponseDto> List = boardService.searchTitle(keyword);
 
             Payload payload = Payload.builder()
                     .message("제목으로 게시물 검색에 성공하였습니다.")
@@ -139,7 +157,7 @@ public class BoardController {
 
             BoardListDto boardListDto = BoardListDto.builder()
                     .payload(payload)
-                    .boardDtoList(List)
+                    .boardResponseDtoList(List)
                     .build();
 
             return new ResponseEntity<>(boardListDto, HttpStatus.OK);
@@ -166,7 +184,7 @@ public class BoardController {
             return new ResponseEntity<>("요청값에 subCategoryId가 없습니다.", HttpStatus.BAD_REQUEST);
         }
         try {
-            List<BoardDto> List =
+            List<BoardResponseDto> List =
                     boardService.searchCategory(categoryId, subCategoryId);
 
             Payload payload = Payload.builder()
@@ -177,7 +195,7 @@ public class BoardController {
 
             BoardListDto boardListDto = BoardListDto.builder()
                     .payload(payload)
-                    .boardDtoList(List)
+                    .boardResponseDtoList(List)
                     .build();
 
             return new ResponseEntity<>(boardListDto, HttpStatus.OK);
@@ -201,7 +219,8 @@ public class BoardController {
                 return new ResponseEntity<>("요청값에 토큰값이 없습니다.", HttpStatus.BAD_REQUEST);
             }
             if (userService.validToken(token)) {
-                List<BoardDto> List = boardService.listMyBoards(userEntity);
+                List<BoardResponseDto>
+                        List = boardService.listMyBoards(userEntity);
 
                 Payload payload = Payload.builder()
                         .message("나의 게시물 조회에 성공하였습니다.")
@@ -211,7 +230,7 @@ public class BoardController {
 
                 BoardListDto boardListDto = BoardListDto.builder()
                         .payload(payload)
-                        .boardDtoList(List)
+                        .boardResponseDtoList(List)
                         .build();
 
                 return new ResponseEntity<>(boardListDto, HttpStatus.OK);
@@ -244,7 +263,8 @@ public class BoardController {
                 return new ResponseEntity<>("요청값에 토큰값이 없습니다.", HttpStatus.BAD_REQUEST);
             }
             if (userService.validToken(token)) {
-                List<BoardDto> List = boardService.findAllByUserId(userId);
+                List<BoardResponseDto>
+                        List = boardService.findAllByUserId(userId);
 
                 Payload payload = Payload.builder()
                         .message("해당 " + userId + "번 회원님의 게시물 조회에 성공하였습니다.")
@@ -254,7 +274,7 @@ public class BoardController {
 
                 BoardListDto boardListDto = BoardListDto.builder()
                         .payload(payload)
-                        .boardDtoList(List)
+                        .boardResponseDtoList(List)
                         .build();
 
                 return new ResponseEntity<>(boardListDto, HttpStatus.OK);
@@ -342,24 +362,27 @@ public class BoardController {
     //@RequestBody :HTTP 요청 몸체를 자바 객체로 변환
     //하지만!! 여기서는 요청 body가 formdata 이기 때문에 @RequsetBody를 사용하지않는다.
     @PostMapping(value = "/register")
-    public ResponseEntity register(BoardDto boardDto
+    public ResponseEntity register(BoardRequestDto boardRequestDto
             , List<MultipartFile> files
             , @RequestHeader("token") String token
             , @AuthenticationPrincipal UserEntity user) {
         try {
-            if (boardDto.getTitle() == null) {
+            if (files.size() > 6) {
+                return new ResponseEntity<>("이미지 파일은 5개 까지 가능합니다.", HttpStatus.BAD_REQUEST);
+            }
+            if (boardRequestDto.getTitle() == null) {
                 return new ResponseEntity<>("게시물 제목을 입력해주세요.", HttpStatus.BAD_REQUEST);
             }
-            if (boardDto.getContent() == null) {
+            if (boardRequestDto.getContent() == null) {
                 return new ResponseEntity<>("게시물 내용을 입력해주세요.", HttpStatus.BAD_REQUEST);
             }
-            if (boardDto.getPrice() == null) {
+            if (boardRequestDto.getPrice() == null) {
                 return new ResponseEntity<>("게시물 가격을 입력해주세요.", HttpStatus.BAD_REQUEST);
             }
-            if (boardDto.getCategoryId() == null) {
+            if (boardRequestDto.getCategoryId() == null) {
                 return new ResponseEntity<>("요청값에 categoryId를 입력해주세요.", HttpStatus.BAD_REQUEST);
             }
-            if (boardDto.getGrade() == null) {
+            if (boardRequestDto.getGrade() == null) {
                 return new ResponseEntity<>("게시물 상품 등급을 입력해주세요.", HttpStatus.BAD_REQUEST);
             }
             if (token == null) {
@@ -369,7 +392,7 @@ public class BoardController {
                 return new ResponseEntity<>("파일이 없습니다.", HttpStatus.BAD_REQUEST);
             }
             if (userService.validToken(token)) {
-                boardService.register(boardDto, files, user);
+                boardService.register(boardRequestDto, files, user);
 
                 Payload payload = Payload.builder()
                         .message("게시물 등록에 성공하였습니다.")
@@ -397,26 +420,26 @@ public class BoardController {
     // 한 게시물 수정
     @PatchMapping(value = "/update") // 한 게시물의 id 를 받아서 그 안에 들어 있는 게시물 정보 수정.
     public ResponseEntity update(
-            BoardDto boardDto
+            BoardRequestDto boardRequestDto
             , List<MultipartFile> files
             , @RequestHeader("token") String token
             , @AuthenticationPrincipal UserEntity user
     ) {
 
         try {
-            if (boardDto.getTitle() == null) {
+            if (boardRequestDto.getTitle() == null) {
                 return new ResponseEntity<>("게시물 제목을 입력해주세요.", HttpStatus.BAD_REQUEST);
             }
-            if (boardDto.getContent() == null) {
+            if (boardRequestDto.getContent() == null) {
                 return new ResponseEntity<>("게시물 내용을 입력해주세요.", HttpStatus.BAD_REQUEST);
             }
-            if (boardDto.getPrice() == null) {
+            if (boardRequestDto.getPrice() == null) {
                 return new ResponseEntity<>("게시물 가격을 입력해주세요.", HttpStatus.BAD_REQUEST);
             }
-            if (boardDto.getCategoryId() == null) {
+            if (boardRequestDto.getCategoryId() == null) {
                 return new ResponseEntity<>("요청값에 categoryId를 입력해주세요.", HttpStatus.BAD_REQUEST);
             }
-            if (boardDto.getGrade() == null) {
+            if (boardRequestDto.getGrade() == null) {
                 return new ResponseEntity<>("게시물 상품 등급을 입력해주세요.", HttpStatus.BAD_REQUEST);
             }
             if (token == null) {
@@ -427,10 +450,10 @@ public class BoardController {
             }
 
             if (userService.validToken(token)) {
-                boardService.update(files, boardDto, user);
+                boardService.update(files, boardRequestDto, user);
 
                 Payload payload = Payload.builder()
-                        .message(boardDto.getId() + "번 게시물이 수정에 성공하였습니다.")
+                        .message(boardRequestDto.getId() + "번 게시물이 수정에 성공하였습니다.")
                         .isSuccess(true)
                         .httpStatus(HttpStatus.OK)
                         .build();
@@ -443,7 +466,7 @@ public class BoardController {
         } catch (Exception e) {
             e.printStackTrace();
             Payload payload = Payload.builder()
-                    .message(boardDto.getId() + "번 게시물이 수정에 실패하였습니다.")
+                    .message(boardRequestDto.getId() + "번 게시물이 수정에 실패하였습니다.")
                     .isSuccess(false)
                     .httpStatus(HttpStatus.INTERNAL_SERVER_ERROR)
                     .build();

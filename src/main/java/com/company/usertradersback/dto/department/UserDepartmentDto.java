@@ -1,4 +1,4 @@
-package com.company.usertradersback.dto;
+package com.company.usertradersback.dto.department;
 
 
 import lombok.Builder;

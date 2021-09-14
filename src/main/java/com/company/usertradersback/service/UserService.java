@@ -2,13 +2,16 @@ package com.company.usertradersback.service;
 
 import com.company.usertradersback.config.jwt.JwtTokenProvider;
 import com.company.usertradersback.config.s3.AwsS3;
-import com.company.usertradersback.dto.UserDepartmentDto;
-import com.company.usertradersback.dto.UserDto;
+import com.company.usertradersback.dto.department.UserDepartmentDto;
+import com.company.usertradersback.dto.user.UserDto;
+import com.company.usertradersback.dto.grades.UserGradesDto;
 import com.company.usertradersback.entity.UserDepartmentEntity;
 import com.company.usertradersback.entity.UserEntity;
+import com.company.usertradersback.entity.UserGradesEntity;
 import com.company.usertradersback.entity.UserIsLoginedEntity;
 import com.company.usertradersback.exception.ApiIllegalArgumentException;
 import com.company.usertradersback.repository.UserDepartmentRepository;
+import com.company.usertradersback.repository.UserGradesRepository;
 import com.company.usertradersback.repository.UserIsLoginedRepository;
 import com.company.usertradersback.repository.UserRepository;
 import org.springframework.context.annotation.Lazy;
@@ -38,13 +41,15 @@ public class UserService implements UserDetailsService {
     private final PasswordEncoder passwordEncoder;
     private final AwsS3 awsS3;
     private final UserDepartmentRepository userDepartmentRepository;
+    private final UserGradesRepository userGradesRepository;
 
     public UserService(@Lazy UserRepository userRepository,
                        @Lazy UserIsLoginedRepository userIsLoginedRepository,
                        @Lazy JwtTokenProvider jwtTokenProvider,
                        @Lazy PasswordEncoder passwordEncoder,
                        @Lazy AwsS3 awsS3,
-                       @Lazy UserDepartmentRepository userDepartmentRepository
+                       @Lazy UserDepartmentRepository userDepartmentRepository,
+                       @Lazy UserGradesRepository userGradesRepository
     ) {
         this.userRepository = userRepository;
         this.userIsLoginedRepository = userIsLoginedRepository;
@@ -52,6 +57,7 @@ public class UserService implements UserDetailsService {
         this.passwordEncoder = passwordEncoder;
         this.awsS3 = awsS3;
         this.userDepartmentRepository = userDepartmentRepository;
+        this.userGradesRepository =userGradesRepository;
     }
 
 //     Spring Security 필수 메소드 구현
@@ -281,7 +287,6 @@ public class UserService implements UserDetailsService {
         return results;
     }
 
-
     //회원 한명 정보 삭제
     @Transactional
     public void deleteById(Integer id) {
@@ -289,7 +294,19 @@ public class UserService implements UserDetailsService {
     }
 
     //회원 점수 부여, 저장
+    @Transactional
+    public Integer grades(UserGradesDto userGradesDto,
+                          UserEntity userEntity){
+        return userGradesRepository.save(
+                UserGradesEntity.builder()
+                        .userSendId(userEntity)
+                        .userRecvId(userGradesDto.getUserRecvId())
+                        .grade(userGradesDto.getGrade())
+                        .createAt(LocalDateTime.now())
+                        .build()
+        ).getId();
 
+    }
     //해당 회원 총 점수 평균 값 조회
 
 

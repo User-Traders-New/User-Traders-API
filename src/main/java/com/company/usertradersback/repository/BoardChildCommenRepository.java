@@ -17,4 +17,5 @@ public interface BoardChildCommenRepository extends JpaRepository<BoardChildComm
     @Transactional
     @Query("select count(bcc.id) from BoardChildCommentEntity bcc where bcc.userId.id = :userId and bcc.id = :id")
     Integer exist(Integer userId, Integer id);
+
 }
