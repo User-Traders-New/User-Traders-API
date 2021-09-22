@@ -2,6 +2,7 @@ package com.company.usertradersback.repository;
 
 import com.company.usertradersback.entity.BoardEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
@@ -16,11 +17,15 @@ public interface BoardRepository extends JpaRepository<BoardEntity,Integer>  {
 
     @Transactional
     @Query("select b from BoardEntity b " +
-            "left join b.categoryId ci on b.categoryId = ci.id" +
-            " left join ci.subCategoryId sci on ci.subCategoryId = sci.id where ci.id = :categoryId and sci.id= :subCategoryId")
+            "left join b.categoryId ci on b.categoryId.id = ci.id" +
+            " left join ci.subCategoryId sci on ci.subCategoryId.id = sci.id where ci.id = :categoryId and sci.id= :subCategoryId")
     List<BoardEntity> selectAll(Integer categoryId,Integer subCategoryId);
 
     @Transactional
     List<BoardEntity> findAllByUserId_Id(Integer userId);
 
+    @Transactional
+    @Modifying
+    @Query("update BoardEntity b set b.views = b.views + 1 where b.id = :boardId")
+    void saveViews(Integer boardId);
 }

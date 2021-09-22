@@ -125,6 +125,8 @@ public class BoardService {
     public BoardResponseLoginDto listDetail(Integer id, Integer userId) {
         BoardEntity boardEntity = boardRepository.findById(id)
                 .orElseThrow(() -> new ApiIllegalArgumentException("해당되는 게시물 번호 " + id + " 값의 상세정보가 없습니다."));
+        //session 확인으로 조회수 증가는 나중에 구현, 일단 상세정보 한번 볼때마다 views = views + 1
+        boardRepository.saveViews(id);
         BoardResponseLoginDto board = BoardResponseLoginDto.builder().build().convertEntityToDto(boardEntity, boardLikeUserRepository.selectCountBoardId(boardEntity.getId())
                 , boardParentCommentRepository.selectCountBoardIdBCC(boardEntity.getId()) +
                         boardParentCommentRepository.selectCountBoardIdBPC(boardEntity.getId())
@@ -315,7 +317,7 @@ public class BoardService {
                         .content(boardRequestDto.getContent())
                         .price(boardRequestDto.getPrice())
                         .categoryId(boardRequestDto.getCategoryId())
-                        .views(boardRequestDto.getViews())
+                        .views(0)
                         .grade(boardRequestDto.getGrade())
                         .status(boardRequestDto.getStatus())
                         .createAt(LocalDateTime.now())
