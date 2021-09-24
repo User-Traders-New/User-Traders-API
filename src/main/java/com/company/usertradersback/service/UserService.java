@@ -75,11 +75,18 @@ public class UserService implements UserDetailsService {
 
     // 회원 로그인 , 한 회원 이메일, 비밀번호 조회
     @Transactional
-    public String login(Map<String, String> user) {
-        UserEntity userEntity = userRepository.findByEmail(user.get("email"))
-                .orElseThrow(() -> new ApiIllegalArgumentException("가입되지 않은 E-MAIL 입니다."));
+    public Map<String,String> login(Map<String, String> user) {
+        Map<String, String> map = new HashMap<>();
+
+        if (userRepository.selectEmailCount(user.get("email")) >= 1){
+
+            UserEntity userEntity = userRepository.findByEmail(user.get("email"))
+                    .orElseThrow(() -> new ApiIllegalArgumentException("가입 되지 않은 email 입니다."));
+
         if (!passwordEncoder.matches(user.get("password"), userEntity.getPassword())) {
-            throw new ApiIllegalArgumentException("잘못된 비밀번호 입니다.");
+            map.put("token","");
+            map.put("message","비밀번호를 잘못 입력 하셨습니다.");
+            return map;
         }
         int a = userIsLoginedRepository.checkId(userEntity.getId());
 
@@ -95,7 +102,16 @@ public class UserService implements UserDetailsService {
                             .build()
             );
         }
-        return jwtTokenProvider.createToken(userEntity.getUsername(), userEntity.getRoles());
+        map.put("token",jwtTokenProvider.createToken(userEntity.getUsername(), userEntity.getRoles()));
+        map.put("message","로그인에 성공하였습니다.");
+            return map;
+        }else {
+            map.put("token","");
+            map.put("message","가입 되지 않은 email 입니다.");
+            return map;
+
+        }
+
     }
 
     //회원 토큰 값 유효성 검사

@@ -72,12 +72,15 @@ public class UserController {
             if(!user.containsKey("password")){
                 return new ResponseEntity<>("비밀번호를 입력해주세요.", HttpStatus.BAD_REQUEST);
             }
-            //로그인, 반환값 token
-            String token = userService.login(user);
+            //로그인, 반환값 token 및 로그인 실패 message
+
+            Map<String,String> tokenAndMessage =userService.login(user); ;
+            String token = tokenAndMessage.get("token");
+            String message = tokenAndMessage.get("message");
 
             // 고정 응답값
             Payload payload = Payload.builder()
-                    .message("로그인에 성공하였습니다.")
+                    .message(message)
                     .isSuccess(true)
                     .httpStatus(HttpStatus.OK)
                     .build();
