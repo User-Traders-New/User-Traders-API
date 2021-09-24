@@ -5,6 +5,7 @@ import com.company.usertradersback.dto.department.UserDepartmentDto;
 import com.company.usertradersback.dto.department.UserDepartmentListDto;
 import com.company.usertradersback.dto.grades.UserGradesDto;
 import com.company.usertradersback.dto.user.UserDto;
+import com.company.usertradersback.dto.user.UserLoginDto;
 import com.company.usertradersback.dto.user.UserTokenDto;
 import com.company.usertradersback.dto.user.UserValidDto;
 import com.company.usertradersback.dto.usercheck.UserEmailCheckDto;
@@ -72,12 +73,18 @@ public class UserController {
             if(!user.containsKey("password")){
                 return new ResponseEntity<>("비밀번호를 입력해주세요.", HttpStatus.BAD_REQUEST);
             }
-            //로그인, 반환값 token
-            String token = userService.login(user);
+            //로그인, 반환값 token 및 로그인 실패 message
+
+            Map<String,String> tokenAndMessage =userService.login(user); ;
+            String token = tokenAndMessage.get("token");
+            String message = tokenAndMessage.get("message");
+            String email = tokenAndMessage.get("email");
+            String nickname = tokenAndMessage.get("nickname");
+            String imagePath = tokenAndMessage.get("imagePath");
 
             // 고정 응답값
             Payload payload = Payload.builder()
-                    .message("로그인에 성공하였습니다.")
+                    .message(message)
                     .isSuccess(true)
                     .httpStatus(HttpStatus.OK)
                     .build();
@@ -86,6 +93,11 @@ public class UserController {
             UserTokenDto userTokenDto = UserTokenDto.builder()
                     .payload(payload)
                     .token(token)
+                    .user(UserLoginDto.builder()
+                            .email(email)
+                            .nickcname(nickname)
+                            .imagePath(imagePath)
+                            .build())
                     .build();
 
             return new ResponseEntity<>(userTokenDto, HttpStatus.OK);

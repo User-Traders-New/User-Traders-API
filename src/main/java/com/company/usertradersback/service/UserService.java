@@ -5,6 +5,7 @@ import com.company.usertradersback.config.s3.AwsS3;
 import com.company.usertradersback.dto.department.UserDepartmentDto;
 import com.company.usertradersback.dto.user.UserDto;
 import com.company.usertradersback.dto.grades.UserGradesDto;
+import com.company.usertradersback.dto.user.UserLoginDto;
 import com.company.usertradersback.entity.UserDepartmentEntity;
 import com.company.usertradersback.entity.UserEntity;
 import com.company.usertradersback.entity.UserGradesEntity;
@@ -75,12 +76,25 @@ public class UserService implements UserDetailsService {
 
     // 회원 로그인 , 한 회원 이메일, 비밀번호 조회
     @Transactional
-    public String login(Map<String, String> user) {
-        UserEntity userEntity = userRepository.findByEmail(user.get("email"))
-                .orElseThrow(() -> new ApiIllegalArgumentException("가입되지 않은 E-MAIL 입니다."));
+    public Map<String,String> login(Map<String, String> user) {
+        Map<String, String> map = new HashMap<>();
+
+        if (userRepository.selectEmailCount(user.get("email")) >= 1){
+
+            UserEntity userEntity = userRepository.findByEmail(user.get("email"))
+                    .orElseThrow(() -> new ApiIllegalArgumentException("가입 되지 않은 email 입니다."));
+
         if (!passwordEncoder.matches(user.get("password"), userEntity.getPassword())) {
-            throw new ApiIllegalArgumentException("잘못된 비밀번호 입니다.");
+            map.put("token","");
+            map.put("message","비밀번호를 잘못 입력 하셨습니다.");
+            return map;
         }
+            UserLoginDto userLoginDto = UserLoginDto.builder()
+                    .email(userEntity.getEmail())
+                    .nickcname(userEntity.getNickname())
+                    .imagePath(userEntity.getImagePath())
+                    .build();
+
         int a = userIsLoginedRepository.checkId(userEntity.getId());
 
         if (a >= 1) {
@@ -95,7 +109,19 @@ public class UserService implements UserDetailsService {
                             .build()
             );
         }
-        return jwtTokenProvider.createToken(userEntity.getUsername(), userEntity.getRoles());
+        map.put("token",jwtTokenProvider.createToken(userEntity.getUsername(), userEntity.getRoles()));
+        map.put("message","로그인에 성공하였습니다.");
+        map.put("email",userEntity.getEmail());
+        map.put("nickname",userEntity.getNickname());
+        map.put("imagePath",userEntity.getImagePath());
+            return map;
+        }else {
+            map.put("token","");
+            map.put("message","가입 되지 않은 email 입니다.");
+            return map;
+
+        }
+
     }
 
     //회원 토큰 값 유효성 검사

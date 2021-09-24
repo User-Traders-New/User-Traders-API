@@ -18,11 +18,15 @@ public class UserTokenDto {
     // 로그인 토큰값
     private String token;
 
+    // 로그인 성공후 해당 유저 이메일, 닉네임, 프로필 사진 반환
+    private UserLoginDto user;
+
 
     @Builder
-    public UserTokenDto(Payload payload,String token){
+    public UserTokenDto(Payload payload,String token,UserLoginDto user){
         this.payload = payload;
         this.token =token;
+        this.user =user;
     }
 
 }
