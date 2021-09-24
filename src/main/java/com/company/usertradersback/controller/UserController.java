@@ -75,9 +75,16 @@ public class UserController {
             }
             //로그인, 반환값 token 및 로그인 실패 message
 
-            Map<String,String> tokenAndMessage =userService.login(user); ;
+            Map<String,String> tokenAndMessage = userService.login(user); ;
             String token = tokenAndMessage.get("token");
             String message = tokenAndMessage.get("message");
+            Integer userId;
+            if(tokenAndMessage.get("userId")== ""){
+                userId = null;
+            }else {
+                userId= Integer.parseInt(tokenAndMessage.get("userId"));
+            }
+
             String email = tokenAndMessage.get("email");
             String nickname = tokenAndMessage.get("nickname");
             String imagePath = tokenAndMessage.get("imagePath");
@@ -94,6 +101,7 @@ public class UserController {
                     .payload(payload)
                     .token(token)
                     .user(UserLoginDto.builder()
+                            .userId(userId)
                             .email(email)
                             .nickcname(nickname)
                             .imagePath(imagePath)
