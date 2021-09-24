@@ -11,11 +11,14 @@ import lombok.Setter;
 public class UserLoginDto {
 
     @Builder
-    public UserLoginDto(String email, String nickcname, String imagePath) {
+    public UserLoginDto(Integer userId, String email, String nickcname, String imagePath) {
+        this.userId = userId;
         this.email = email;
         this.nickcname = nickcname;
         this.imagePath = imagePath;
     }
+
+    private Integer userId;
 
     private String email;
 

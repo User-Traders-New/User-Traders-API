@@ -3,9 +3,8 @@ package com.company.usertradersback.service;
 import com.company.usertradersback.config.jwt.JwtTokenProvider;
 import com.company.usertradersback.config.s3.AwsS3;
 import com.company.usertradersback.dto.department.UserDepartmentDto;
-import com.company.usertradersback.dto.user.UserDto;
 import com.company.usertradersback.dto.grades.UserGradesDto;
-import com.company.usertradersback.dto.user.UserLoginDto;
+import com.company.usertradersback.dto.user.UserDto;
 import com.company.usertradersback.entity.UserDepartmentEntity;
 import com.company.usertradersback.entity.UserEntity;
 import com.company.usertradersback.entity.UserGradesEntity;
@@ -87,13 +86,17 @@ public class UserService implements UserDetailsService {
         if (!passwordEncoder.matches(user.get("password"), userEntity.getPassword())) {
             map.put("token","");
             map.put("message","비밀번호를 잘못 입력 하셨습니다.");
+            map.put("userId","");
+            map.put("email","");
+            map.put("nickname","");
+            map.put("imagePath","");
             return map;
         }
-            UserLoginDto userLoginDto = UserLoginDto.builder()
-                    .email(userEntity.getEmail())
-                    .nickcname(userEntity.getNickname())
-                    .imagePath(userEntity.getImagePath())
-                    .build();
+//            UserLoginDto userLoginDto = UserLoginDto.builder()
+//                    .email(userEntity.getEmail())
+//                    .nickcname(userEntity.getNickname())
+//                    .imagePath(userEntity.getImagePath())
+//                    .build();
 
         int a = userIsLoginedRepository.checkId(userEntity.getId());
 
@@ -111,6 +114,7 @@ public class UserService implements UserDetailsService {
         }
         map.put("token",jwtTokenProvider.createToken(userEntity.getUsername(), userEntity.getRoles()));
         map.put("message","로그인에 성공하였습니다.");
+        map.put("userId",userEntity.getId().toString());
         map.put("email",userEntity.getEmail());
         map.put("nickname",userEntity.getNickname());
         map.put("imagePath",userEntity.getImagePath());
@@ -118,6 +122,10 @@ public class UserService implements UserDetailsService {
         }else {
             map.put("token","");
             map.put("message","가입 되지 않은 email 입니다.");
+            map.put("userId","");
+            map.put("email","");
+            map.put("nickname","");
+            map.put("imagePath","");
             return map;
 
         }
