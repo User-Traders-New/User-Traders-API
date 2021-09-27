@@ -311,33 +311,33 @@ public class UserController {
             List<MultipartFile> files
     ) {
         try {
-            if(userDto.getEmail()==null){
-                return new ResponseEntity<>("이메일을 입력해주세요.", HttpStatus.BAD_REQUEST);
-            }
-            if(userDto.getEmail().length()>25){
-                return new ResponseEntity<>("이메일은 25자를 넘을 수 없습니다.", HttpStatus.BAD_REQUEST);
-            }
-            if(userDto.getPassword()==null){
-                return new ResponseEntity<>("비밀번호를 입력해주세요.", HttpStatus.BAD_REQUEST);
-            }
-            if(userDto.getPassword().length()<8){
-                return new ResponseEntity<>("비밀번호는 8자 이상 입력해주세요.", HttpStatus.BAD_REQUEST);
-            }
+//            if(userDto.getEmail()==null){
+//                return new ResponseEntity<>("이메일을 입력해주세요.", HttpStatus.BAD_REQUEST);
+//            }
+//            if(userDto.getEmail().length()>25){
+//                return new ResponseEntity<>("이메일은 25자를 넘을 수 없습니다.", HttpStatus.BAD_REQUEST);
+//            }
+//            if(userDto.getPassword()==null){
+//                return new ResponseEntity<>("비밀번호를 입력해주세요.", HttpStatus.BAD_REQUEST);
+//            }
+//            if(userDto.getPassword().length()<8){
+//                return new ResponseEntity<>("비밀번호는 8자 이상 입력해주세요.", HttpStatus.BAD_REQUEST);
+//            }
             if(userDto.getUserName()==null){
                 return new ResponseEntity<>("이름을 입력해주세요.", HttpStatus.BAD_REQUEST);
             }
-            if(userDto.getNickname()==null){
-                return new ResponseEntity<>("닉네임을 입력해주세요.", HttpStatus.BAD_REQUEST);
-            }
-            if(userDto.getNickname().length()>10){
-                return new ResponseEntity<>("닉네임은 10자를 넘을 수 없습니다.", HttpStatus.BAD_REQUEST);
-            }
-            if(userDto.getNickname().length()<2){
-                return new ResponseEntity<>("닉네임은 2자 이상 입력해주세요.", HttpStatus.BAD_REQUEST);
-            }
-            if(userDto.getDepartmentId()==null){
-                return new ResponseEntity<>("학과번호를 입력해주세요.", HttpStatus.BAD_REQUEST);
-            }
+//            if(userDto.getNickname()==null){
+//                return new ResponseEntity<>("닉네임을 입력해주세요.", HttpStatus.BAD_REQUEST);
+//            }
+//            if(userDto.getNickname().length()>10){
+//                return new ResponseEntity<>("닉네임은 10자를 넘을 수 없습니다.", HttpStatus.BAD_REQUEST);
+//            }
+//            if(userDto.getNickname().length()<2){
+//                return new ResponseEntity<>("닉네임은 2자 이상 입력해주세요.", HttpStatus.BAD_REQUEST);
+//            }
+//            if(userDto.getDepartmentId()==null){
+//                return new ResponseEntity<>("학과번호를 입력해주세요.", HttpStatus.BAD_REQUEST);
+//            }
             if(userDto.getGender()==null){
                 return new ResponseEntity<>("성별을 입력해주세요.", HttpStatus.BAD_REQUEST);
             }
