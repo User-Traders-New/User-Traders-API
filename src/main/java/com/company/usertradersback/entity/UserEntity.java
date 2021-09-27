@@ -38,6 +38,9 @@ public class UserEntity implements UserDetails {
     @Column(name = "nickname")
     private String nickname;
 
+    @Column(name = "tel")
+    private String tel;
+
     @ManyToOne
     @JoinColumn(name = "departmentId")
     private UserDepartmentEntity departmentId;
@@ -70,6 +73,7 @@ public class UserEntity implements UserDetails {
 
     @Builder
     public UserEntity(Integer id, String email, String password, String userName, String nickname,
+                      String tel,
                       UserDepartmentEntity departmentId, String studentId,
                       Integer gender, List<String> roles, Integer loginType, String imagePath,
                       LocalDateTime createAt, LocalDateTime modifiedAt) {
@@ -78,6 +82,7 @@ public class UserEntity implements UserDetails {
         this.password = password;
         this.userName = userName;
         this.nickname = nickname;
+        this.tel = tel;
         this.departmentId = departmentId;
         this.studentId = studentId;
         this.gender = gender;
