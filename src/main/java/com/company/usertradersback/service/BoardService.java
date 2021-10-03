@@ -480,6 +480,8 @@ public class BoardService {
             BoardLikeUserDto boardLikeUserDto = BoardLikeUserDto.builder()
                     .id(boardLikeUserEntity.getId())
                     .boardId(boardLikeUserEntity.getBoardId())
+                    .boardImageDto(this.listImage(boardLikeUserEntity.getBoardId().getId()).get(0)
+                    )
                     .build();
             return boardLikeUserDto;
         }).collect(Collectors.toList());

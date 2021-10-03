@@ -114,8 +114,9 @@ public class BoardController {
     // => 게시물 좋아요 수 ok, 채팅 수 ok , 좋아요 인지 아닌지 ok
     // => 게시물 - 회원 - 평점 - 평균 ok
     // 토큰값으로 조회수 views 1증가 , 중복 증가 x
-    @GetMapping(value = "/list/detail/{id}")
-    public ResponseEntity listDetail(@PathVariable("id") Integer id
+    @GetMapping(value = "/list/detail")
+    public ResponseEntity listDetail(
+                @RequestParam("id")Integer id
             , @RequestHeader("token") String token
             , @AuthenticationPrincipal UserEntity userEntity
     ) {

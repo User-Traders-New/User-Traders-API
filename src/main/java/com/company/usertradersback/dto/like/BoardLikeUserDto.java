@@ -1,5 +1,6 @@
 package com.company.usertradersback.dto.like;
 
+import com.company.usertradersback.dto.board.BoardImageDto;
 import com.company.usertradersback.entity.BoardEntity;
 import lombok.Builder;
 import lombok.Getter;
@@ -22,10 +23,13 @@ public class BoardLikeUserDto {
     @JoinColumn(name = "boardId")
     private BoardEntity boardId;
 
+    private BoardImageDto boardImageDto;
+
     @Builder
-    public BoardLikeUserDto(Integer id,BoardEntity boardId){
+    public BoardLikeUserDto(Integer id,BoardEntity boardId,BoardImageDto boardImageDto){
         this.id = id;
         this.boardId = boardId;
+        this.boardImageDto = boardImageDto;
     }
 
 }
