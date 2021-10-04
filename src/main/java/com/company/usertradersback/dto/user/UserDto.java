@@ -29,7 +29,7 @@ public class UserDto {
     private String password;
 
     // 회원 이름
-    private String userName;
+    private String userNamed;
 
     // 회원 닉네임
     private String nickname;
@@ -62,7 +62,7 @@ public class UserDto {
     private LocalDateTime modifiedAt;
 
     @Builder
-    public UserDto(Payload payload, Integer id, String email, String password, String userName, String nickname,
+    public UserDto(Payload payload, Integer id, String email, String password, String userNamed, String nickname,
                    String tel,
                    UserDepartmentEntity departmentId, String studentId,
                    Integer gender, List<String> roles, Integer loginType, String imagePath,
@@ -71,7 +71,7 @@ public class UserDto {
         this.id = id;
         this.email = email;
         this.password = password;
-        this.userName = userName;
+        this.userNamed = userNamed;
         this.nickname = nickname;
         this.tel = tel;
         this.departmentId = departmentId;
@@ -91,7 +91,7 @@ public class UserDto {
                 .id(id)
                 .email(email)
                 .password(password)
-                .userName(userName)
+                .userNamed(userNamed)
                 .nickname(nickname)
                 .tel(tel)
                 .departmentId(departmentId)
@@ -112,7 +112,7 @@ public class UserDto {
                 .id(userEntity.getId())
                 .email(userEntity.getEmail())
                 .password(userEntity.getPassword())
-                .userName(userEntity.getUsername())
+                .userNamed(userEntity.getUserNamed())
                 .nickname(userEntity.getNickname())
                 .tel(userEntity.getTel())
                 .departmentId(userEntity.getDepartmentId())

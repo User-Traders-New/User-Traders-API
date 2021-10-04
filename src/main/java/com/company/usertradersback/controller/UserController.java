@@ -168,7 +168,7 @@ public class UserController {
             if(userDto.getPassword().length()<8){
                 return new ResponseEntity<>("비밀번호는 8자 이상 입력해주세요.", HttpStatus.BAD_REQUEST);
             }
-            if(userDto.getUserName()==null){
+            if(userDto.getUserNamed()==null){
                 return new ResponseEntity<>("이름을 입력해주세요.", HttpStatus.BAD_REQUEST);
             }
             if(userDto.getNickname()==null){
@@ -323,7 +323,7 @@ public class UserController {
 //            if(userDto.getPassword().length()<8){
 //                return new ResponseEntity<>("비밀번호는 8자 이상 입력해주세요.", HttpStatus.BAD_REQUEST);
 //            }
-            if(userDto.getUserName()==null){
+            if(userDto.getUserNamed()==null){
                 return new ResponseEntity<>("이름을 입력해주세요.", HttpStatus.BAD_REQUEST);
             }
 //            if(userDto.getNickname()==null){

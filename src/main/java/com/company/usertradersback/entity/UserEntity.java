@@ -32,8 +32,8 @@ public class UserEntity implements UserDetails {
     @Column(name = "password")
     private String password;
 
-    @Column(name = "userName")
-    private String userName;
+    @Column(name = "userNamed")
+    private String userNamed;
 
     @Column(name = "nickname")
     private String nickname;
@@ -72,7 +72,7 @@ public class UserEntity implements UserDetails {
     private List<String> roles = new ArrayList<>();
 
     @Builder
-    public UserEntity(Integer id, String email, String password, String userName, String nickname,
+    public UserEntity(Integer id, String email, String password, String userNamed, String nickname,
                       String tel,
                       UserDepartmentEntity departmentId, String studentId,
                       Integer gender, List<String> roles, Integer loginType, String imagePath,
@@ -80,7 +80,7 @@ public class UserEntity implements UserDetails {
         this.id = id;
         this.email = email;
         this.password = password;
-        this.userName = userName;
+        this.userNamed = userNamed;
         this.nickname = nickname;
         this.tel = tel;
         this.departmentId = departmentId;
