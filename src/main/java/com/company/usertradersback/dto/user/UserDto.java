@@ -61,12 +61,16 @@ public class UserDto {
     // 회원 수정 날짜
     private LocalDateTime modifiedAt;
 
+    // 장바구니 수
+    private Integer likeCount;
+
     @Builder
     public UserDto(Payload payload, Integer id, String email, String password, String userNamed, String nickname,
                    String tel,
                    UserDepartmentEntity departmentId, String studentId,
                    Integer gender, List<String> roles, Integer loginType, String imagePath,
-                   LocalDateTime createAt, LocalDateTime modifiedAt) {
+                   LocalDateTime createAt, LocalDateTime modifiedAt
+    ,Integer likeCount) {
         this.payload =payload;
         this.id = id;
         this.email = email;
@@ -82,6 +86,7 @@ public class UserDto {
         this.imagePath = imagePath;
         this.createAt = createAt;
         this.modifiedAt = modifiedAt;
+        this.likeCount = likeCount;
     }
 
     //회원 가입 정보 추가를 위한 UserDto -> UserEntity 변환
@@ -106,7 +111,7 @@ public class UserDto {
     }
 
     //프로필 조회할 때 DB에서 꺼낸 전체 UserEntity -> UserDto 바꿈
-    public UserDto UserEntityToDto(UserEntity userEntity) {
+    public UserDto UserEntityToDto(UserEntity userEntity,Integer likeCount) {
         return UserDto.builder()
                 .payload(null)
                 .id(userEntity.getId())
@@ -123,6 +128,7 @@ public class UserDto {
                 .imagePath(userEntity.getImagePath())
                 .createAt(userEntity.getCreateAt())
                 .modifiedAt(userEntity.getModifiedAt())
+                .likeCount(likeCount)
                 .build();
     }
 
