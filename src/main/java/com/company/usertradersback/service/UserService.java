@@ -10,10 +10,7 @@ import com.company.usertradersback.entity.UserEntity;
 import com.company.usertradersback.entity.UserGradesEntity;
 import com.company.usertradersback.entity.UserIsLoginedEntity;
 import com.company.usertradersback.exception.ApiIllegalArgumentException;
-import com.company.usertradersback.repository.UserDepartmentRepository;
-import com.company.usertradersback.repository.UserGradesRepository;
-import com.company.usertradersback.repository.UserIsLoginedRepository;
-import com.company.usertradersback.repository.UserRepository;
+import com.company.usertradersback.repository.*;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -42,6 +39,7 @@ public class UserService implements UserDetailsService {
     private final AwsS3 awsS3;
     private final UserDepartmentRepository userDepartmentRepository;
     private final UserGradesRepository userGradesRepository;
+    private final BoardLikeUserRepository boardLikeUserRepository;
 
     public UserService(@Lazy UserRepository userRepository,
                        @Lazy UserIsLoginedRepository userIsLoginedRepository,
@@ -49,7 +47,8 @@ public class UserService implements UserDetailsService {
                        @Lazy PasswordEncoder passwordEncoder,
                        @Lazy AwsS3 awsS3,
                        @Lazy UserDepartmentRepository userDepartmentRepository,
-                       @Lazy UserGradesRepository userGradesRepository
+                       @Lazy UserGradesRepository userGradesRepository,
+                       @Lazy BoardLikeUserRepository boardLikeUserRepository
     ) {
         this.userRepository = userRepository;
         this.userIsLoginedRepository = userIsLoginedRepository;
@@ -58,6 +57,7 @@ public class UserService implements UserDetailsService {
         this.awsS3 = awsS3;
         this.userDepartmentRepository = userDepartmentRepository;
         this.userGradesRepository =userGradesRepository;
+        this.boardLikeUserRepository = boardLikeUserRepository;
     }
 
 //     Spring Security 필수 메소드 구현
@@ -189,7 +189,8 @@ public class UserService implements UserDetailsService {
         String email = jwtTokenProvider.getUserPk(token);
         Optional<UserEntity> userEntityWrapper = userRepository.findByEmail(email);
         UserEntity userEntity = userEntityWrapper.get();
-        return UserDto.builder().build().UserEntityToDto(userEntity);
+        Integer likeCount = boardLikeUserRepository.selectCountUserId(userEntity.getId());
+        return UserDto.builder().build().UserEntityToDto(userEntity,likeCount);
     }
 
     // pk인 id로 해당 회원 한명 프로필 정보 조회
@@ -197,7 +198,8 @@ public class UserService implements UserDetailsService {
     public UserDto findUserById(Integer id) {
         Optional<UserEntity> userEntityWrapper = userRepository.findById(id);
         UserEntity userEntity = userEntityWrapper.get();
-        return UserDto.builder().build().UserEntityToDto(userEntity);
+        Integer likeCount = boardLikeUserRepository.selectCountUserId(userEntity.getId());
+        return UserDto.builder().build().UserEntityToDto(userEntity,likeCount);
     }
 
     //token 값으로 구한 email로 pk,id 조회
@@ -213,7 +215,8 @@ public class UserService implements UserDetailsService {
         Integer id = this.selectId(email);
         Optional<UserEntity> userEntityWrapper = userRepository.findById(id);
         UserEntity userEntity = userEntityWrapper.get();
-        return UserDto.builder().build().UserEntityToDto(userEntity);
+        Integer likeCount = boardLikeUserRepository.selectCountUserId(userEntity.getId());
+        return UserDto.builder().build().UserEntityToDto(userEntity,likeCount);
     }
 
     // user 객체로 회원 한명 프로필 정보 조회 (객체를 받는건 비효율,사용 x)
@@ -222,7 +225,8 @@ public class UserService implements UserDetailsService {
 
         Optional<UserEntity> userEntityWrapper = userRepository.findById(user.getId());
         UserEntity userEntity = userEntityWrapper.get();
-        return UserDto.builder().build().UserEntityToDto(userEntity);
+        Integer likeCount = boardLikeUserRepository.selectCountUserId(userEntity.getId());
+        return UserDto.builder().build().UserEntityToDto(userEntity,likeCount);
     }
 
     // 변경할 회원 정보와 , 해당 회원의 pk인 id로 ,회원 한명 프로필 정보 수정

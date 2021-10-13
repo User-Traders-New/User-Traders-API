@@ -28,6 +28,10 @@ public interface BoardLikeUserRepository extends JpaRepository<BoardLikeUserEnti
     @Query("select count(bl) from BoardLikeUserEntity bl where bl.boardId.id = :boardId")
     Integer selectCountBoardId(Integer boardId);
 
+    @Transactional
+    @Query("select count(bl) from BoardLikeUserEntity bl where bl.userId.id =:userId")
+    Integer selectCountUserId(Integer userId);
+
 //    해당 유저와 게시물이 이미 좋아요인지 아닌지 존재여부를 체크하기 위한 jpql 인데,
 //    exists 함수 사용불가로 querydsl에게 support를 받는다.
 //    @Query("select exists(select blu.id from BoardLikeUserEntity blu where blu.userId  = :userId and blu.boardId = :boardId)as exist")
