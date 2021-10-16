@@ -1,99 +1,92 @@
-//package com.company.usertradersback.service;
-//
-//
-//import com.company.usertradersback.entity.ChatMessage;
-//import com.company.usertradersback.repository.ChatRoomRepository;
-//import lombok.RequiredArgsConstructor;
-//import org.springframework.data.redis.core.RedisTemplate;
-//import org.springframework.data.redis.listener.ChannelTopic;
-//import org.springframework.stereotype.Service;
-//
-//@RequiredArgsConstructor
-//@Service
-//public class ChatService {
-//
-//    private final ChannelTopic channelTopic;
-//    private final RedisTemplate redisTemplate;
-//    private final ChatRoomRepository chatRoomRepository;
-//
-//    /**
-//     * destination정보에서 roomId 추출
-//     */
-//    public String getRoomId(String destination) {
-//        int lastIndex = destination.lastIndexOf('/');
-//        if (lastIndex != -1)
-//            return destination.substring(lastIndex + 1);
-//        else
-//            return "";
-//    }
-//
-//    /**
-//     * 채팅방에 메시지 발송
-//     */
-//    public void sendChatMessage(ChatMessage chatMessage) {
-//        chatMessage.setUserCount(chatRoomRepository.getUserCount(chatMessage.getRoomId()));
-//        if (ChatMessage.MessageType.ENTER.equals(chatMessage.getType())) {
-//            chatMessage.setMessage(chatMessage.getSender() + "님이 방에 입장했습니다.");
-//            chatMessage.setSender("[알림]");
-//        } else if (ChatMessage.MessageType.QUIT.equals(chatMessage.getType())) {
-//            chatMessage.setMessage(chatMessage.getSender() + "님이 방에서 나갔습니다.");
-//            chatMessage.setSender("[알림]");
-//        }
-//        redisTemplate.convertAndSend(channelTopic.getTopic(), chatMessage);
-//    }
-//
-//}
-
 package com.company.usertradersback.service;
 
-import com.company.usertradersback.dto.chat.ChatRoom;
-import com.fasterxml.jackson.databind.ObjectMapper;
+
+import com.company.usertradersback.dto.chat.ChatMessage;
+import com.company.usertradersback.entity.ChatRoomMessageEntity;
+import com.company.usertradersback.repository.ChatMessageJpaRepository;
+import com.company.usertradersback.repository.ChatRoomJpaRepository;
+import com.company.usertradersback.repository.ChatRoomRepository;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.listener.ChannelTopic;
 import org.springframework.stereotype.Service;
-import org.springframework.web.socket.TextMessage;
-import org.springframework.web.socket.WebSocketSession;
+import org.springframework.transaction.annotation.Transactional;
 
-import javax.annotation.PostConstruct;
-import java.io.IOException;
-import java.util.*;
+import java.util.List;
+import java.util.stream.Collectors;
 
-@Slf4j
 @RequiredArgsConstructor
 @Service
 public class ChatService {
 
-    private final ObjectMapper objectMapper;
-    private Map<String, ChatRoom> chatRooms;
+    private final ChannelTopic channelTopic;
+    private final RedisTemplate redisTemplate;
+    private final ChatRoomRepository chatRoomRepository;
+    private final ChatRoomJpaRepository chatRoomJpaRepository;
+    private final ChatMessageJpaRepository chatMessageJpaRepository;
 
-    @PostConstruct
-    private void init() {
-        chatRooms = new LinkedHashMap<>();
+    /**
+     * destination정보에서 roomId 추출
+     */
+    public String getRoomId(String destination) {
+        int lastIndex = destination.lastIndexOf('/');
+        if (lastIndex != -1)
+            return destination.substring(lastIndex + 1);
+        else
+            return "";
     }
 
-    public List<ChatRoom> findAllRoom() {
-        return new ArrayList<>(chatRooms.values());
-    }
-
-    public ChatRoom findRoomById(String roomId) {
-        return chatRooms.get(roomId);
-    }
-
-    public ChatRoom createRoom(String name) {
-        String randomId = UUID.randomUUID().toString();
-        ChatRoom chatRoom = ChatRoom.builder()
-                .roomId(randomId)
-                .name(name)
-                .build();
-        chatRooms.put(randomId, chatRoom);
-        return chatRoom;
-    }
-
-    public <T> void sendMessage(WebSocketSession session, T message) {
-        try {
-            session.sendMessage(new TextMessage(objectMapper.writeValueAsString(message)));
-        } catch (IOException e) {
-            log.error(e.getMessage(), e);
+    /**
+     * 채팅방에 메시지 발송
+     */
+    public void sendChatMessage(ChatMessage chatMessage) {
+        chatMessage.setUserCount(chatRoomRepository.getUserCount(chatMessage.getRoomId()));
+        if (ChatMessage.MessageType.ENTER.equals(chatMessage.getType())) {
+            chatMessage.setMessage(chatMessage.getSender() + "님이 방에 입장했습니다.");
+            chatMessage.setSender("[알림]");
+        } else if (ChatMessage.MessageType.QUIT.equals(chatMessage.getType())) {
+            chatMessage.setMessage(chatMessage.getSender() + "님이 방에서 나갔습니다.");
+            chatMessage.setSender("[알림]");
         }
+        redisTemplate.convertAndSend(channelTopic.getTopic(), chatMessage);
     }
+
+    @Transactional //해당 방번호에 메시지들을 저장해주는 save
+    public String saveChatMessage(ChatMessage chatMessage) {
+
+        return chatMessageJpaRepository.save(chatMessage.toEntity()).getMessage();
+    }
+
+    //해당 채팅방 이름을 가진 메시지 전부를 출력.
+    @Transactional
+    public List<ChatMessage> getChatMessageList(String roomId){
+//        hashOpsChatRoom.values(CHAT_ROOMS);
+
+        List<ChatRoomMessageEntity> chatRoomMessageEntityList = chatMessageJpaRepository.findByRoomId(roomId);
+        List<ChatMessage> results = chatRoomMessageEntityList.stream().map(chatRoomMessageEntity -> {
+            ChatMessage chatMessage = ChatMessage.builder()
+                    .sender(chatRoomMessageEntity.getSender())
+                    .roomId(chatRoomMessageEntity.getRoomId())
+                    .userId(chatRoomMessageEntity.getUserId())
+                    .message(chatRoomMessageEntity.getMessage())
+                    .type(chatRoomMessageEntity.getType())
+                    .userCount(chatRoomMessageEntity.getUserCount())
+                    .build();
+            return chatMessage;
+        }).collect(Collectors.toList());
+        return results;
+
+    }
+
+    private ChatMessage convertEntityToDto(ChatRoomMessageEntity chatRoomMessageEntity) { //엔티티 객체 변수를 디티오 객체 변수로 변환
+        return ChatMessage.builder()
+                .sender(chatRoomMessageEntity.getSender())
+                .roomId(chatRoomMessageEntity.getRoomId())
+                .userId(chatRoomMessageEntity.getUserId())
+                .message(chatRoomMessageEntity.getMessage())
+                .type(chatRoomMessageEntity.getType())
+                .userCount(chatRoomMessageEntity.getUserCount())
+                .build();
+    }
+
 }
