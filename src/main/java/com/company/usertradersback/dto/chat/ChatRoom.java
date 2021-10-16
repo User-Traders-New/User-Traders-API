@@ -50,6 +50,7 @@ public class ChatRoom implements Serializable {
     private UserEntity buyUserId;
     private BoardEntity boardId;
     private LocalDateTime createAt;
+    private String newMessage; //최신 메시지
 
     public static ChatRoom create(String name) {
         ChatRoom chatRoom = new ChatRoom();
@@ -66,7 +67,7 @@ public class ChatRoom implements Serializable {
     public ChatRoom(String roomId, String name,
                     BoardEntity boardId,
                     long userCount, Integer id, UserEntity sellUserId, UserEntity buyUserId
-    ,LocalDateTime createAt) {
+    ,LocalDateTime createAt,String newMessage) {
         this.roomId = roomId;
         this.name = name;
         this.userCount = userCount;
@@ -75,6 +76,7 @@ public class ChatRoom implements Serializable {
         this.buyUserId = buyUserId;
         this.boardId = boardId;
         this.createAt = createAt;
+        this.newMessage = newMessage;
     }
 
     public ChatRoom convertEntityToDto(ChatRoomEntity chatRoomEntity) {

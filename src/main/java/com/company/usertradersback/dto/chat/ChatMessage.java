@@ -14,13 +14,14 @@ import java.time.LocalDateTime;
 public class ChatMessage {
 
     @Builder
-    public ChatMessage(MessageType type, String roomId, String sender, String message, long userCount,UserEntity userId) {
+    public ChatMessage(MessageType type, String roomId, String sender, String message, long userCount,UserEntity userId, LocalDateTime createAt) {
         this.type = type;
         this.roomId = roomId;
         this.sender = sender;
         this.userId = userId;
         this.message = message;
         this.userCount = userCount;
+        this.createAt = createAt;
     }
 
     // 메시지 타입 : 입장, 퇴장, 채팅
@@ -34,6 +35,7 @@ public class ChatMessage {
     private UserEntity userId;
     private String message; // 메시지
     private long userCount; // 채팅방 인원수, 채팅방 내에서 메시지가 전달될때 인원수 갱신시 사용
+    private LocalDateTime createAt;
 
     public ChatRoomMessageEntity toEntity() { //저장을 위한 엔티티
 

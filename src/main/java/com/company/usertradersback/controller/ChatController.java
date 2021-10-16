@@ -41,21 +41,25 @@ public class ChatController {
         System.out.println("@@@@@@@@메시지 들어오나요???");
         System.out.println(message);
 
-        String nickname = jwtTokenProvider.getUserPk(token);
+        String email = jwtTokenProvider.getUserPk(token);
+        Optional<UserEntity> userEntityWrapper = userRepository.findByEmail(email);
+        UserEntity userEntity = userEntityWrapper.get();
+
+        String nickname = userEntity.getNickname();
         // 로그인 회원 정보로 대화명 설정
         System.out.println(nickname);
 
         message.setSender(nickname);
         // 채팅방 인원수 세팅
         message.setUserCount(chatRoomRepository.getUserCount(message.getRoomId()));
-
+//        LocalDateTime dateTime =LocalDateTime.now();
+//                message.setCreateAt(dateTime);
         // Websocket에 발행된 메시지를 redis로 발행(publish)
         chatService.sendChatMessage(message);
 
 
-        String email = jwtTokenProvider.getUserPk(token);
-        Optional<UserEntity> userEntityWrapper = userRepository.findByEmail(email);
-        UserEntity userEntity = userEntityWrapper.get();
+//        String email = jwtTokenProvider.getUserPk(token);
+
 
         ChatRoomMessageEntity chatRoomMessageEntity = ChatRoomMessageEntity.builder()
                 .roomId(message.getRoomId())

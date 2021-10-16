@@ -2,5 +2,5 @@
 #  profiles:
 #    active: alpha
 #  redis:
-#    host: localhost
+#    host: 54.180.127.156
 #    port: 6379
