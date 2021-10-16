@@ -5,6 +5,7 @@ import com.company.usertradersback.config.jwt.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -54,5 +55,25 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                 .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider),
                         UsernamePasswordAuthenticationFilter.class);
                 // JwtAuthenticationFilter를 UsernamePasswordAuthenticationFilter 전에 넣는다
+    }
+
+    /**
+     * 테스트를 위해 In-Memory에 계정을 임의로 생성한다.
+     * 서비스에 사용시에는 DB데이터를 이용하도록 수정이 필요하다.
+     */
+    @Override
+    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+        auth.inMemoryAuthentication()
+                .withUser("happydaddy")
+                .password("{noop}1234")
+                .roles("USER")
+                .and()
+                .withUser("angrydaddy")
+                .password("{noop}1234")
+                .roles("USER")
+                .and()
+                .withUser("guest")
+                .password("{noop}1234")
+                .roles("GUEST");
     }
 }

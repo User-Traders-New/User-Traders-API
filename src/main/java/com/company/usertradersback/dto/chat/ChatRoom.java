@@ -25,35 +25,68 @@
 //}
 package com.company.usertradersback.dto.chat;
 
-import com.company.usertradersback.service.ChatService;
+import com.company.usertradersback.entity.BoardEntity;
+import com.company.usertradersback.entity.ChatRoomEntity;
+import com.company.usertradersback.entity.UserEntity;
 import lombok.Builder;
 import lombok.Getter;
-import org.springframework.web.socket.WebSocketSession;
+import lombok.Setter;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.io.Serializable;
+import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Getter
-public class ChatRoom {
+@Setter
+public class ChatRoom implements Serializable {
+
+    private static final long serialVersionUID = 6494678977089006639L;
+
     private String roomId;
     private String name;
-    private Set<WebSocketSession> sessions = new HashSet<>();
+    private long userCount; // 채팅방 인원수
+    private Integer id;
+    private UserEntity sellUserId;
+    private UserEntity buyUserId;
+    private BoardEntity boardId;
+    private LocalDateTime createAt;
+
+    public static ChatRoom create(String name) {
+        ChatRoom chatRoom = new ChatRoom();
+        chatRoom.roomId = UUID.randomUUID().toString();
+        chatRoom.name = name;
+        return chatRoom;
+    }
+
+    public ChatRoom() {
+
+    }
 
     @Builder
-    public ChatRoom(String roomId, String name) {
+    public ChatRoom(String roomId, String name,
+                    BoardEntity boardId,
+                    long userCount, Integer id, UserEntity sellUserId, UserEntity buyUserId
+    ,LocalDateTime createAt) {
         this.roomId = roomId;
         this.name = name;
+        this.userCount = userCount;
+        this.id = id;
+        this.sellUserId = sellUserId;
+        this.buyUserId = buyUserId;
+        this.boardId = boardId;
+        this.createAt = createAt;
     }
 
-    public void handleActions(WebSocketSession session, ChatMessage chatMessage, ChatService chatService) {
-        if (chatMessage.getType().equals(ChatMessage.MessageType.ENTER)) {
-            sessions.add(session);
-            chatMessage.setMessage(chatMessage.getSender() + "님이 입장했습니다.");
-        }
-        sendMessage(chatMessage, chatService);
+    public ChatRoom convertEntityToDto(ChatRoomEntity chatRoomEntity) {
+        return ChatRoom.builder()
+                .id(chatRoomEntity.getId())
+                .roomId(chatRoomEntity.getRoomId())
+                .sellUserId(chatRoomEntity.getSellUserId())
+                .buyUserId(chatRoomEntity.getBuyUserId())
+                .name(chatRoomEntity.getName())
+                .boardId(chatRoomEntity.getBoardId())
+                .createAt(chatRoomEntity.getCreateAt())
+                .build();
     }
 
-    public <T> void sendMessage(T message, ChatService chatService) {
-        sessions.parallelStream().forEach(session -> chatService.sendMessage(session, message));
-    }
 }
