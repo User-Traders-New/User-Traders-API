@@ -13,5 +13,9 @@ public interface ChatMessageJpaRepository extends JpaRepository<ChatRoomMessageE
     @Transactional
     @Query("select a from ChatRoomMessageEntity a where a.roomId = :roomId order by a.createAt asc,a.id asc ")
     List<ChatRoomMessageEntity> findByRoomId(String roomId);
+
+    @Transactional
+    @Query("select a.message from ChatRoomMessageEntity a where a.roomId = :roomId order by a.createAt desc ,a.id asc")
+    String selectNewMessage(String roomId);
 }
 

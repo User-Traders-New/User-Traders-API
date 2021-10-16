@@ -119,6 +119,7 @@ public class ChatRoomRepository {
     // 모든 채팅방 조회
     public List<ChatRoom> findAllRoomUser(UserEntity sellUserId,UserEntity buyUserId){
         List<ChatRoomEntity> chatRoomEntityList = chatRoomJpaRepository.selectUserId(sellUserId.getId(),buyUserId.getId());
+//        String newMessage = chatMessageJpaRepository.selectNewMessage();
 
         List<ChatRoom> results = chatRoomEntityList.stream().map(
                 chatRoomEntity -> {

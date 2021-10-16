@@ -71,6 +71,7 @@ public class ChatService {
                     .message(chatRoomMessageEntity.getMessage())
                     .type(chatRoomMessageEntity.getType())
                     .userCount(chatRoomMessageEntity.getUserCount())
+                    .createAt(chatRoomMessageEntity.getCreateAt())
                     .build();
             return chatMessage;
         }).collect(Collectors.toList());
