@@ -48,7 +48,7 @@ public class ChatService {
             chatMessage.setMessage(chatMessage.getSender() + "님이 방에서 나갔습니다.");
             chatMessage.setSender("[알림]");
         }
-        redisTemplate.convertAndSend(channelTopic.getTopic(), chatMessage);
+        redisTemplate.  convertAndSend(channelTopic.getTopic(), chatMessage);
     }
 
     @Transactional //해당 방번호에 메시지들을 저장해주는 save
