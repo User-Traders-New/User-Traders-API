@@ -119,15 +119,17 @@ public class ChatRoomRepository {
     // 모든 채팅방 조회
     public List<ChatRoom> findAllRoomUser(UserEntity sellUserId,UserEntity buyUserId){
         List<ChatRoomEntity> chatRoomEntityList = chatRoomJpaRepository.selectUserId(sellUserId.getId(),buyUserId.getId());
-//        String newMessage = chatMessageJpaRepository.selectNewMessage();
 
         List<ChatRoom> results = chatRoomEntityList.stream().map(
                 chatRoomEntity -> {
+                    String message = chatMessageJpaRepository
+                            .findTop1ByRoomIdOrderByCreateAtDescIdAsc(chatRoomEntity.getRoomId()).getMessage();
                     ChatRoom chatRoom = ChatRoom.builder().build()
-                            .convertEntityToDto(chatRoomEntity);
+                            .convertEntityToDto(chatRoomEntity,message);
                             return chatRoom;
                 }
         ).collect(Collectors.toList());
+
         return results;
     }
 
