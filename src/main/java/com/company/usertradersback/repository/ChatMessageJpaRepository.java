@@ -11,11 +11,14 @@ import java.util.List;
 public interface ChatMessageJpaRepository extends JpaRepository<ChatRoomMessageEntity, Integer> {
 
     @Transactional
-    @Query("select a from ChatRoomMessageEntity a where a.roomId = :roomId order by a.createAt asc,a.id asc ")
+    @Query("select a from ChatRoomMessageEntity a where a.roomId = :roomId order by a.createAt desc,a.id asc ")
     List<ChatRoomMessageEntity> findByRoomId(String roomId);
 
     @Transactional
     @Query("select a.message from ChatRoomMessageEntity a where a.roomId = :roomId order by a.createAt desc ,a.id asc")
     String selectNewMessage(String roomId);
+
+    @Transactional
+    ChatRoomMessageEntity findTop1ByRoomIdOrderByCreateAtDescIdAsc(String roomId);
 }
 

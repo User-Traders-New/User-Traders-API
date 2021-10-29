@@ -10,6 +10,9 @@ import java.util.List;
 public interface ChatRoomJpaRepository extends JpaRepository<ChatRoomEntity, Integer> {
 
    @Transactional
-   @Query("select c from ChatRoomEntity c where c.sellUserId.id = :sellUserId or c.buyUserId.id = :buyUserId")
-List<ChatRoomEntity> selectUserId(Integer sellUserId , Integer buyUserId);
+   @Query("select c from ChatRoomEntity c where c.sellUserId.id = :sellUserId or c.buyUserId.id = :buyUserId order by c.createAt desc, c.id asc ")
+      List<ChatRoomEntity> selectUserId(Integer sellUserId , Integer buyUserId);
+
+
+
 }
