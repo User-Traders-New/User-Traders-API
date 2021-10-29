@@ -119,18 +119,40 @@ public class ChatRoomRepository {
     // 모든 채팅방 조회
     public List<ChatRoom> findAllRoomUser(UserEntity sellUserId,UserEntity buyUserId){
         List<ChatRoomEntity> chatRoomEntityList = chatRoomJpaRepository.selectUserId(sellUserId.getId(),buyUserId.getId());
+        System.out.println(chatRoomEntityList.size());
 
-        List<ChatRoom> results = chatRoomEntityList.stream().map(
-                chatRoomEntity -> {
-                    String message = chatMessageJpaRepository
-                            .findTop1ByRoomIdOrderByCreateAtDescIdAsc(chatRoomEntity.getRoomId()).getMessage();
-                    ChatRoom chatRoom = ChatRoom.builder().build()
-                            .convertEntityToDto(chatRoomEntity,message);
-                            return chatRoom;
-                }
-        ).collect(Collectors.toList());
+        if(chatRoomEntityList.size()>1){
 
-        return results;
+            List<ChatRoom> results = chatRoomEntityList.stream().map(
+                    chatRoomEntity -> {
+                        System.out.println("@@@@@여기");
+                        System.out.println(chatRoomEntity.getRoomId());
+                        String message = "";
+                        if(chatMessageJpaRepository.findTop1ByRoomIdOrderByCreateAtDescIdAsc(chatRoomEntity.getRoomId()) == null){
+                            message = "";
+                        }else{
+                            message = chatMessageJpaRepository
+                                    .findTop1ByRoomIdOrderByCreateAtDescIdAsc(chatRoomEntity.getRoomId()).getMessage();
+                        }
+
+                        ChatRoom chatRoom = ChatRoom.builder().build()
+                                .convertEntityToDto(chatRoomEntity,message);
+                        return chatRoom;
+                    }
+            ).collect(Collectors.toList());
+
+            return results;
+        }else {
+            List<ChatRoom> resultsTwo = chatRoomEntityList.stream().map(
+                    chatRoomEntity -> {
+                     ChatRoom chatRoom = new ChatRoom();
+                        return chatRoom;
+                    }
+            ).collect(Collectors.toList());
+
+            return resultsTwo;
+        }
+
     }
 
     // 특정 채팅방 조회
